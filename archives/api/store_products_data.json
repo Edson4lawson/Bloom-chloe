@@ -1,0 +1,110 @@
+[
+    {
+        "name": "Kit Soin Complet",
+        "description": "Kit complet de soin du visage et du corps avec produits premium",
+        "price": 45000,
+        "image_url": "\/frontend\/src\/assets\/store1.jpg",
+        "slug": "kit-soin-complet-69cab98ae0ccb",
+        "category_id": 1,
+        "source": "store"
+    },
+    {
+        "name": "Pack Beaut\u00e9 Premium",
+        "description": "Pack beaut\u00e9 premium pour une routine compl\u00e8te haut de gamme",
+        "price": 65000,
+        "image_url": "\/frontend\/src\/assets\/store2.jpg",
+        "slug": "pack-beaut\u00e9-premium-69cab98ae195e",
+        "category_id": 2,
+        "source": "store"
+    },
+    {
+        "name": "Ensemble Coiffure Pro",
+        "description": "Ensemble professionnel coiffure avec accessoires de qualit\u00e9",
+        "price": 35000,
+        "image_url": "\/frontend\/src\/assets\/store3.jpg",
+        "slug": "ensemble-coiffure-pro-69cab98ae1a59",
+        "category_id": 3,
+        "source": "store"
+    },
+    {
+        "name": "Set Spa Maison",
+        "description": "Set spa maison pour d\u00e9tente et bien-\u00eatre \u00e0 domicile",
+        "price": 55000,
+        "image_url": "\/frontend\/src\/assets\/store4.jpg",
+        "slug": "set-spa-maison-69cab98ae1b09",
+        "category_id": 4,
+        "source": "store"
+    },
+    {
+        "name": "Collection Wellness",
+        "description": "Collection wellness avec produits aromath\u00e9rapie et relaxation",
+        "price": 75000,
+        "image_url": "\/frontend\/src\/assets\/store5.jpg",
+        "slug": "collection-wellness-69cab98ae1ec7",
+        "category_id": 5,
+        "source": "store"
+    },
+    {
+        "name": "Box Soir\u00e9e Glamour",
+        "description": "Box soir\u00e9e glamour avec maquillage et accessoires tendance",
+        "price": 85000,
+        "image_url": "\/frontend\/src\/assets\/store6.jpg",
+        "slug": "box-soir\u00e9e-glamour-69cab98ae2be3",
+        "category_id": 6,
+        "source": "store"
+    },
+    {
+        "name": "Pack Accessoires Mode",
+        "description": "Pack accessoires mode pour compl\u00e9ter votre style",
+        "price": 28000,
+        "image_url": "\/frontend\/src\/assets\/store7.jpg",
+        "slug": "pack-accessoires-mode-69cab98ae327a",
+        "category_id": 7,
+        "source": "store"
+    },
+    {
+        "name": "Kit Maquillage Pro",
+        "description": "Kit maquillage professionnel avec brushes et cosm\u00e9tiques",
+        "price": 42000,
+        "image_url": "\/frontend\/src\/assets\/store8.jpg",
+        "slug": "kit-maquillage-pro-69cab98ae4042",
+        "category_id": 8,
+        "source": "store"
+    },
+    {
+        "name": "Set Parfumerie",
+        "description": "Set parfumerie avec fragrances exclusives Bloom Chlo\u00e9",
+        "price": 38000,
+        "image_url": "\/frontend\/src\/assets\/store9.jpg",
+        "slug": "set-parfumerie-69cab98ae430d",
+        "category_id": 9,
+        "source": "store"
+    },
+    {
+        "name": "Collection Luxe",
+        "description": "Collection luxe avec produits de grande marque",
+        "price": 95000,
+        "image_url": "\/frontend\/src\/assets\/store10.jpg",
+        "slug": "collection-luxe-69cab98ae4566",
+        "category_id": 10,
+        "source": "store"
+    },
+    {
+        "name": "Box Cadeau Parfaite",
+        "description": "Box cadeau parfaite pour toutes les occasions sp\u00e9ciales",
+        "price": 52000,
+        "image_url": "\/frontend\/src\/assets\/store11.jpg",
+        "slug": "box-cadeau-parfaite-69cab98ae4704",
+        "category_id": 11,
+        "source": "store"
+    },
+    {
+        "name": "Pack Complet Beaut\u00e9",
+        "description": "Pack complet beaut\u00e9 pour routine quotidienne experte",
+        "price": 68000,
+        "image_url": "\/frontend\/src\/assets\/store12.jpg",
+        "slug": "pack-complet-beaut\u00e9-69cab98ae4907",
+        "category_id": 12,
+        "source": "store"
+    }
+]
