@@ -62,31 +62,54 @@
 
     <!-- Top Products -->
     <div class="bg-white dark:bg-[rgb(43,44,43)] rounded-3xl p-8 border border-slate-100 dark:border-slate-500 shadow-sm">
-      <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-6">Produits les plus vendus</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="(product, idx) in topProducts" :key="product.id" class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl">
-          <span class="w-8 h-8 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-xs font-black text-slate-600 dark:text-slate-300">{{ idx + 1 }}</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ product.name }}</p>
-            <p class="text-xs text-slate-500">{{ product.sold }} vendus</p>
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center">
+          <TrendingUp class="w-5 h-5 mr-3 text-purple-500" />
+          Top 8 des meilleures ventes
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-for="(product, idx) in topProducts" :key="product.id" class="group relative bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-500 rounded-2xl p-3 hover:shadow-xl transition-all duration-300">
+          <!-- Position Badge -->
+          <div class="absolute -top-2 -left-2 w-8 h-8 bg-black dark:bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-black z-20 shadow-lg">
+            #{{ idx + 1 }}
           </div>
-          <span class="text-sm font-black text-slate-800 dark:text-white whitespace-nowrap">{{ product.revenue?.toLocaleString('fr-FR') }} FCFA</span>
+          
+          <div class="relative w-full aspect-square rounded-2xl bg-white dark:bg-slate-800 overflow-hidden mb-4">
+            <img :src="product.image_url" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+              <p class="text-[10px] text-white/80 font-medium">CA Généré: {{ product.revenue?.toLocaleString('fr-FR') }} FCFA</p>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-white truncate">{{ product.name }}</h4>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-purple-600 dark:text-purple-400">{{ product.sold }} UNITÉS VENDUES</span>
+              <span class="text-[10px] text-slate-400 font-bold uppercase">{{ Math.round((product.revenue / (product.sold || 1))).toLocaleString('fr-FR') }} / u</span>
+            </div>
+          </div>
         </div>
+      </div>
+      <div v-if="!topProducts.length" class="h-40 flex items-center justify-center text-slate-400 italic text-sm">
+        Aucune donnée de vente pour cette période.
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ShoppingCart, Users, Wallet, Package, TrendingUp } from 'lucide-vue-next'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import adminService from '@/services/adminService'
+import { getProductImageUrl } from '@/utils/imageHelper'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 const period = ref('30d')
+const analyticsData = ref(null)
 
 const kpis = ref([
   { label: 'Revenus totaux', value: '0 FCFA', icon: Wallet, color: 'blue', trend: 0 },
@@ -105,26 +128,74 @@ const orderStatuses = ref([
 
 const topProducts = ref([])
 
-const revenueData = reactive({
-  labels: [],
-  datasets: [{
-    label: 'Revenus (FCFA)',
-    data: [],
-    borderColor: '#8b5cf6',
-    backgroundColor: 'rgba(139, 92, 246, 0.05)',
-    fill: true,
-    tension: 0.4,
-    pointBackgroundColor: '#8b5cf6'
-  }]
+const revenueData = computed(() => {
+  try {
+    let sales = [...(analyticsData.value?.monthlySales || [])]
+    
+    // Si on n'a qu'un seul mois, on ajoute un point 0 au début pour dessiner une ligne
+    if (sales.length === 1) {
+      sales = [{ month: 'Début', revenue: 0 }, ...sales]
+    }
+    
+    // Création d'un dégradé pour l'aire sous la courbe
+    const ctx = document.createElement('canvas').getContext('2d')
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+    gradient.addColorStop(0, 'rgba(192, 38, 211, 0.4)')
+    gradient.addColorStop(1, 'rgba(192, 38, 211, 0)')
+    
+    return {
+      labels: sales.map(s => s.month || ''),
+      datasets: [{
+        label: 'Revenus (FCFA)',
+        data: sales.map(s => parseFloat(s.revenue || 0)),
+        borderColor: '#c026d3',
+        borderWidth: 4,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#c026d3',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4
+      }]
+    }
+  } catch (e) {
+    return { labels: [], datasets: [] }
+  }
 })
 
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 12 } },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+      titleColor: '#fff',
+      bodyColor: '#fff',
+      padding: 12,
+      cornerRadius: 12,
+      displayColors: false,
+      callbacks: {
+        label: (context) => new Intl.NumberFormat('fr-FR').format(context.raw) + ' FCFA'
+      }
+    }
+  },
   scales: {
-    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } },
-    x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } }
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+      ticks: {
+        color: '#94a3b8',
+        font: { size: 10, weight: 'bold' },
+        callback: (value) => value >= 1000 ? (value/1000) + 'k' : value
+      }
+    },
+    x: {
+      grid: { display: false },
+      ticks: { color: '#94a3b8', font: { size: 10, weight: 'bold' } }
+    }
   }
 }
 
@@ -134,6 +205,9 @@ const loadAnalytics = async () => {
     const statsRes = await adminService.getStats()
     if (statsRes.success) {
       const s = statsRes.stats
+      analyticsData.value = s
+      
+      // KPI Update
       kpis.value[0].value = `${(s.totalRevenue || 0).toLocaleString('fr-FR')} FCFA`
       kpis.value[1].value = String(s.totalOrders || 0)
       kpis.value[2].value = String(s.totalClients || 0)
@@ -141,23 +215,22 @@ const loadAnalytics = async () => {
         ? `${Math.round(s.totalRevenue / s.totalOrders).toLocaleString('fr-FR')} FCFA` 
         : '0 FCFA'
 
-      // Revenue chart
-      if (s.monthlySales?.length) {
-        revenueData.labels = s.monthlySales.map(m => m.month)
-        revenueData.datasets[0].data = s.monthlySales.map(m => m.revenue)
-      }
+      // Revenue chart - Handled by computed revenueData
+      // No longer need manual updates here
 
-      // Recent orders for status breakdown
-      if (s.recentOrders?.length) {
-        const statusCounts = {}
-        s.recentOrders.forEach(o => {
-          statusCounts[o.status] = (statusCounts[o.status] || 0) + 1
-        })
-        const total = s.recentOrders.length
+      // Order status breakdown (Real data from backend)
+      if (s.orderStatusCounts?.length) {
+        const total = s.totalOrders || 1
         const statusMap = { pending: 0, processing: 1, shipped: 2, completed: 3, cancelled: 4 }
-        Object.entries(statusCounts).forEach(([status, count]) => {
-          const idx = statusMap[status]
+        
+        // Reset counts first
+        orderStatuses.value.forEach(os => { os.count = 0; os.percent = 0 })
+        
+        s.orderStatusCounts.forEach(item => {
+          const statusKey = String(item.status).toLowerCase()
+          const idx = statusMap[statusKey]
           if (idx !== undefined) {
+            const count = parseInt(item.count) || 0
             orderStatuses.value[idx].count = count
             orderStatuses.value[idx].percent = Math.round((count / total) * 100)
           }
@@ -165,17 +238,15 @@ const loadAnalytics = async () => {
       }
     }
 
-    // Top products
-    const prodRes = await adminService.getProducts()
-    if (prodRes.success) {
-      topProducts.value = (prodRes.products || [])
-        .slice(0, 6)
-        .map(p => ({
-          id: p.id,
-          name: p.name,
-          sold: Math.floor(Math.random() * 50 + 10),
-          revenue: Math.floor(Math.random() * 500000 + 50000)
-        }))
+    // Real Top products from backend
+    if (statsRes.success && statsRes.stats.topProducts) {
+      topProducts.value = statsRes.stats.topProducts.slice(0, 8).map(p => ({
+        id: p.id,
+        name: p.name,
+        image_url: getProductImageUrl(p.image_url),
+        sold: parseInt(p.total_sold),
+        revenue: parseFloat(p.total_revenue)
+      }))
     }
   } catch (err) {
     console.error('Analytics load error:', err)

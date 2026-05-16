@@ -1,10 +1,13 @@
 <template>
   <div class="sidebar-container w-64 bg-white dark:bg-[rgb(43,44,43)] text-slate-800 dark:text-white flex flex-col h-screen shadow-xl border-r border-purple-100 dark:border-slate-500 transition-all duration-300">
     <!-- Logo -->
-    <div class="sidebar-logo p-6 border-b border-purple-100 dark:border-slate-500 flex justify-center">
-      <div class="text-center">
-        <h2 class="text-xl font-black tracking-tight text-purple-900 dark:text-white">Bloom</h2>
-        <p class="text-[8px] text-purple-400 dark:text-slate-500 uppercase tracking-[0.4em] font-bold">Manager</p>
+    <div class="sidebar-logo p-6 border-b border-purple-100 dark:border-slate-500 flex items-center justify-start px-6 gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shadow-sm border border-purple-100 dark:border-slate-500">
+        <img src="/bloom-icone.png" class="w-full h-full object-cover" alt="Bloom Logo">
+      </div>
+      <div>
+        <h2 class="text-xl font-black tracking-tight text-purple-900 dark:text-white leading-none">Bloom</h2>
+        <p class="text-[8px] text-purple-400 dark:text-slate-500 uppercase tracking-[0.4em] font-bold mt-1">Manager</p>
       </div>
     </div>
     

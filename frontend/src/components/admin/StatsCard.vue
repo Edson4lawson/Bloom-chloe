@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-white dark:bg-[rgb(43,44,43)] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-500 p-6 hover:shadow-md transition-all duration-300">
+  <div 
+    class="bg-white dark:bg-[rgb(43,44,43)] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-500 p-6 hover:shadow-md transition-all duration-300"
+    :class="{ 'animate-pulse opacity-70': loading }"
+  >
     <div class="flex items-center">
       <div 
         class="w-12 h-12 rounded-xl flex items-center justify-center mr-4 transition-colors"
@@ -24,9 +27,10 @@ import { CountUp } from 'countup.js'
 const props = defineProps({
   title: { type: String, required: true },
   value: { type: [String, Number], required: true },
-  icon: { type: Object, required: true },
+  icon: { type: [Object, Function], required: true },
   color: { type: String, default: 'blue' },
-  suffix: { type: String, default: '' }
+  suffix: { type: String, default: '' },
+  loading: { type: Boolean, default: false }
 })
 
 const countUpRef = ref(null)

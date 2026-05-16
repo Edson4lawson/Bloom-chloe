@@ -141,7 +141,9 @@ const categories = computed(() => {
 });
 
 const filteredProducts = computed(() => {
-  let result = products.value.filter(p => p.source !== 'store');
+  // On exclut les produits de la boutique (Nouvel Arrivage) et ceux des tendances
+  // pour éviter la redondance sur la page d'accueil
+  let result = products.value.filter(p => p.source !== 'store' && p.source !== 'tendance');
   
   if (selectedCategory.value !== 'all') {
     result = result.filter(p => p.category === selectedCategory.value);

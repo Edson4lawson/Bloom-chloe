@@ -76,13 +76,13 @@ try {
         $query = '
             SELECT 
                 o.*,
-                p.status as payment_status,
+                MAX(p.status) as payment_status,
                 COUNT(oi.id) as item_count
             FROM orders o
             LEFT JOIN order_items oi ON o.id = oi.order_id
             LEFT JOIN payments p ON o.id = p.order_id
             WHERE o.user_id = ?
-            GROUP BY o.id
+            GROUP BY o.id, o.created_at
             ORDER BY o.created_at DESC
             LIMIT ? OFFSET ?
         ';

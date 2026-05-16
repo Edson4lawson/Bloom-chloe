@@ -5,43 +5,15 @@
  */
 
 // =============================================================================
-// CONFIGURATION CORS SÉCURISÉE
+// CONFIGURATION CORS DYNAMIQUE (DÉVELOPPEMENT)
 // =============================================================================
 
-// Liste blanche des origines autorisées
-$allowedOrigins = [
-    'http://localhost:5173',       // Vite dev server
-    'http://localhost:5174',       // Vite dev server (port actuel)
-    'http://localhost:3000',       // Alternative dev
-    'http://127.0.0.1:5173',      // Localhost alternatif
-    'http://127.0.0.1:5174',      // Localhost alternatif (port actuel)
-    'https://bloom-chloe.com',    // Production (à configurer)
-    'https://www.bloom-chloe.com' // Production WWW
-];
-
-// Récupérer l'origine de la requête
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-
-// Vérifier si l'origine est autorisée
-if (in_array($origin, $allowedOrigins)) {
-    header("Access-Control-Allow-Origin: $origin");
-    header('Access-Control-Allow-Credentials: true');
-} elseif (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $origin)) {
-    // En développement, autoriser localhost avec n'importe quel port
-    header("Access-Control-Allow-Origin: $origin");
-    header('Access-Control-Allow-Credentials: true');
-}
-
-// Headers CORS
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+header("Access-Control-Allow-Origin: $origin");
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Max-Age: 86400');
-
-// Headers de sécurité
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('X-XSS-Protection: 1; mode=block');
-header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Content-Type: application/json; charset=utf-8');
 
 // Gestion des requêtes OPTIONS (preflight)
@@ -60,13 +32,18 @@ function sendJsonResponse($data, $statusCode = 200) {
 // Fonction pour obtenir les données JSON de la requête
 function getJsonData() {
     $json = file_get_contents('php://input');
+    
+    if (empty($json)) {
+        return [];
+    }
+
     $data = json_decode($json, true);
     
+    // Si le décodage échoue, on retourne un tableau vide pour éviter le 400
     if (json_last_error() !== JSON_ERROR_NONE) {
-        sendJsonResponse(['error' => 'Données JSON invalides'], 400);
+        return [];
     }
     
-    return $data;
+    return is_array($data) ? $data : [];
 }
 ?>
-

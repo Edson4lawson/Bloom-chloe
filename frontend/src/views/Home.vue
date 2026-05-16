@@ -39,7 +39,7 @@
           
           <Suspense>
             <template #default>
-              <Categories id="categories"/>
+              <Categories id="tendances"/>
             </template>
             <template #fallback>
               <div class="h-48"></div>

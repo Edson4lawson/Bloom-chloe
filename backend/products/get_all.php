@@ -15,25 +15,31 @@ try {
     // La connexion $pdo est déjà initialisée par config/db.php
 
     
-    // Paramètres
-    $page = max(1, (int)($_GET["page"] ?? 1));
-    $perPage = max(1, min(200, (int)($_GET["per_page"] ?? 10)));
-    $offset = ($page - 1) * $perPage;
-    
-    // Requête
-    $stmt = $pdo->prepare("
-        SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity,
-               p.image_url, p.source, p.created_at, p.updated_at,
+    // Paramètres de pagination
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $per_page = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 100; // Augmenté pour éviter les coupures
+    $source = isset($_GET['source']) ? $_GET['source'] : null;
+    $offset = ($page - 1) * $per_page;
+
+    // Requête de base
+    $sql = "
+        SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity as stock,
+               p.image_url, p.source, p.status, p.created_at, p.updated_at,
                p.is_featured, p.is_newest, p.is_bestseller, p.is_special_offer,
-               c.name as category_name 
+               c.name as category_name, p.category_id 
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
-        ORDER BY p.created_at DESC 
-        LIMIT ? OFFSET ?
-    ");
+    ";
     
-    $stmt->bindValue(1, (int)$perPage, PDO::PARAM_INT);
-    $stmt->bindValue(2, (int)$offset, PDO::PARAM_INT);
+    if ($source) {
+        $sql .= " WHERE p.source = " . $pdo->quote($source);
+    }
+    
+    $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(1, $per_page, PDO::PARAM_INT);
+    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
     $stmt->execute();
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -45,11 +51,11 @@ try {
         "data" => $products,
         "pagination" => [
             "total" => $total,
-            "per_page" => $perPage,
+            "per_page" => $per_page,
             "current_page" => $page,
-            "last_page" => ceil($total / $perPage),
+            "last_page" => ceil($total / $per_page),
             "from" => $total > 0 ? $offset + 1 : 0,
-            "to" => min($offset + $perPage, $total)
+            "to" => min($offset + $per_page, $total)
         ]
     ]);
     

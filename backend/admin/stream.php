@@ -1,16 +1,43 @@
 <?php
 // backend/admin/stream.php
-require_once __DIR__ . '/../config/headers.php'; // CORS
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
-// Disable timeout for SSE
-set_time_limit(0);
-
-// Forcer le Content-Type pour SSE (doit être après headers.php)
+// SSE headers FIRST — avant toute tentative de sendJsonResponse
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
-header('X-Accel-Buffering: no'); // Important pour Nginx/Apache proxy
+header('X-Accel-Buffering: no');
+// CORS pour SSE
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+header("Access-Control-Allow-Origin: $origin");
+header('Access-Control-Allow-Credentials: true');
+
+// Authentifier sans utiliser sendJsonResponse (qui casserait le flux SSE)
+$token = $_GET['token'] ?? $_GET['access_token'] ?? '';
+if (empty($token)) {
+    echo "event: auth_error\ndata: {\"error\":\"Token manquant\"}\n\n";
+    flush();
+    exit();
+}
+
+// Vérifier le token manuellement sans appeler authenticate()
+$stmt = $pdo->prepare('SELECT id, email, first_name, last_name, role FROM users WHERE token = ? AND token_expires_at > NOW()');
+$stmt->execute([$token]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    echo "event: auth_error\ndata: {\"error\":\"Token invalide ou expiré\"}\n\n";
+    flush();
+    exit();
+}
+
+if ($user['role'] !== 'admin') {
+    echo "event: auth_error\ndata: {\"error\":\"Accès refusé\"}\n\n";
+    flush();
+    exit();
+}
+
 
 // We need a way to check for "real orders". For simplicity, we check if the max order id changed.
 $lastOrderId = 0;
@@ -32,8 +59,10 @@ $fakeActivities = [
 ];
 
 $counter = 0;
+$startTime = time();
+$maxExecutionTime = 20; // Reconnect every 20s to free the thread on single-threaded servers
 
-while (true) {
+while (time() - $startTime < $maxExecutionTime) {
     $events = [];
 
     // 1. Check for real new orders

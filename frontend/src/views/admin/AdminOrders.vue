@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="p-6">
     <!-- Header -->
     <div class="order-header flex justify-between items-center mb-6">
@@ -15,7 +15,7 @@
           <option value="pending">En attente</option>
           <option value="processing">En traitement</option>
           <option value="shipped">Expédiée</option>
-          <option value="delivered">Livrée</option>
+          <option value="completed">Livrée</option>
           <option value="cancelled">Annulée</option>
         </select>
         <input v-model="filters.date" type="date" class="border dark:border-slate-500 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900/50 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent/20">
@@ -56,7 +56,7 @@
                 <option value="pending">En attente</option>
                 <option value="processing">En traitement</option>
                 <option value="shipped">Expédiée</option>
-                <option value="delivered">Livrée</option>
+                <option value="completed">Livrée</option>
                 <option value="cancelled">Annulée</option>
               </select>
             </td>
@@ -199,7 +199,7 @@ const getStatusClass = (status) => {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-    delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
     cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
   }
   return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
@@ -217,14 +217,16 @@ const animateRows = async () => {
   if (ctx) ctx.revert()
   
   ctx = gsap.context(() => {
-    gsap.from(".order-row", {
-      y: 20,
-      opacity: 0,
-      duration: 0.4,
-      stagger: 0.05,
-      ease: "power2.out",
-      clearProps: "all"
-    })
+    if (document.querySelector(".order-row")) {
+      gsap.from(".order-row", {
+        y: 20,
+        opacity: 0,
+        duration: 0.4,
+        stagger: 0.05,
+        ease: "power2.out",
+        clearProps: "all"
+      })
+    }
   })
 }
 
@@ -233,25 +235,21 @@ watch(filteredOrders, () => {
 })
 
 onMounted(async () => {
+  // Attendre que le DOM soit prêt pour GSAP
+  await nextTick()
   await loadOrders()
   
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
   
-  tl.from(".order-header", {
-    y: -30,
-    opacity: 0,
-    duration: 0.8
-  })
-  .from(".order-filters", {
-    y: -20,
-    opacity: 0,
-    duration: 0.6
-  }, "-=0.4")
-  .from(".order-table-container", {
-    y: 30,
-    opacity: 0,
-    duration: 0.8
-  }, "-=0.4")
+  if (document.querySelector(".order-header")) {
+    tl.from(".order-header", { y: -30, opacity: 0, duration: 0.8 })
+  }
+  if (document.querySelector(".order-filters")) {
+    tl.from(".order-filters", { y: -20, opacity: 0, duration: 0.6 }, "-=0.4")
+  }
+  if (document.querySelector(".order-table-container")) {
+    tl.from(".order-table-container", { y: 30, opacity: 0, duration: 0.8 }, "-=0.4")
+  }
   
   animateRows()
 })

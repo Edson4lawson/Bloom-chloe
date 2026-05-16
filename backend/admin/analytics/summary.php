@@ -31,18 +31,32 @@ try {
 
     // Total Revenue
     $stmt = $pdo->query("SELECT SUM(total_amount) as total FROM orders WHERE status != 'cancelled'");
-    $stats['revenue_total'] = (float)$stmt->fetch()['total'];
+    $stats['revenue_total'] = (float)($stmt->fetch()['total'] ?? 0);
 
-    // Recent Orders (last 5)
+    // Order Status Breakdown (ALL orders)
+    $stmt = $pdo->query("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
+    $stats['order_status_counts'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Recent Orders (last 10)
     $stmt = $pdo->query("
         SELECT o.id, o.total_amount, o.status, o.created_at, CONCAT(u.first_name, ' ', u.last_name) as user_name
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
-        ORDER BY o.created_at DESC LIMIT 5
+        ORDER BY o.created_at DESC LIMIT 10
     ");
     $stats['recent_orders'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Recent Products
+    // Real Top Selling Products
+    $stmt = $pdo->query("
+        SELECT p.id, p.name, p.price, p.image_url, SUM(oi.quantity) as total_sold, SUM(oi.price_at_purchase * oi.quantity) as total_revenue
+        FROM order_items oi
+        JOIN products p ON oi.product_id = p.id
+        GROUP BY p.id, p.name, p.price, p.image_url
+        ORDER BY total_sold DESC LIMIT 8
+    ");
+    $stats['top_products'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Recent Products (for the dashboard preview)
     $stmt = $pdo->query("
         SELECT p.id, p.name, p.slug, p.price, p.image_url, c.name as category_name
         FROM products p
@@ -59,7 +73,10 @@ try {
         GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b')
         ORDER BY YEAR(created_at), MONTH(created_at)
     ");
-    $stats['monthly_sales'] = $stmt->fetchAll();
+    $monthlySales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stats['monthly_sales'] = array_map(function($row) {
+        return ['month' => $row['month'], 'revenue' => (float)$row['total']];
+    }, $monthlySales);
 
     sendJsonResponse($stats);
 

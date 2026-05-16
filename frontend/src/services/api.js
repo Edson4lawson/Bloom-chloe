@@ -41,7 +41,11 @@ const processQueue = (error, token = null) => {
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
+      // Also add as query param for GET requests (some backends only read from URL)
+      if (config.method?.toLowerCase() === 'get') {
+        config.params = { ...(config.params || {}), token: token };
+      }
     }
     return config;
 });
@@ -99,6 +103,11 @@ api.interceptors.response.use(
                 
                 // Mettre à jour le header de la requête originale
                 originalRequest.headers.Authorization = `Bearer ${access_token}`;
+                
+                // Mettre à jour aussi le paramètre d'URL pour les requêtes GET (fallback backend)
+                if (originalRequest.method?.toLowerCase() === 'get') {
+                    originalRequest.params = { ...(originalRequest.params || {}), token: access_token };
+                }
                 
                 // Traiter les requêtes en queue
                 processQueue(null, access_token);

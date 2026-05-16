@@ -228,7 +228,7 @@ const navLinks = [
   { name: 'Accueil', href: '/#hero' },
   { name: 'Boutique', href: '/boutique' },
   { name: 'Nouveautés', href: '/#store' },
-  { name: 'Catégories', href: '/#categories' },
+  { name: 'Tendances', href: '/#tendances' },
   { name: 'Contact', href: '/#contact' },
 ];
 

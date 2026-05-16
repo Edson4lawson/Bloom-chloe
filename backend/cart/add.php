@@ -15,12 +15,12 @@ $user = authenticate();
 $data = getJsonData();
 
 // Valider les données d'entrée
-if (empty($data['product_id'])) {
-    sendJsonResponse(['error' => 'ID du produit requis'], 400);
-}
-
-$productId = (int)$data['product_id'];
+$productId = isset($data['product_id']) ? (int)$data['product_id'] : 0;
 $quantity = isset($data['quantity']) ? max(1, (int)$data['quantity']) : 1;
+
+if ($productId <= 0) {
+    sendJsonResponse(['error' => 'ID du produit invalide'], 400);
+}
 $userId = $user['id'];
 
 try {

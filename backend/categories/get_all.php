@@ -16,9 +16,11 @@ try {
 
     
     $stmt = $pdo->query("
-        SELECT id, name, description, image_url 
-        FROM categories 
-        ORDER BY name
+        SELECT c.id, c.name, c.description, c.image_url, COUNT(p.id) as product_count 
+        FROM categories c 
+        LEFT JOIN products p ON c.id = p.category_id 
+        GROUP BY c.id, c.name, c.description, c.image_url
+        ORDER BY c.name
     ");
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     

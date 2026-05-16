@@ -29,7 +29,10 @@ export const useProductStore = defineStore('products', () => {
 
     try {
       const response = await productsService.getAll({ per_page: 200 })
-      const raw = response.data?.data || response.data?.products || response.data || []
+      let raw = response.data?.data || response.data?.products || response.data
+      if (!Array.isArray(raw)) {
+        raw = []
+      }
 
       products.value = raw.map(p => ({
         id: p.id,

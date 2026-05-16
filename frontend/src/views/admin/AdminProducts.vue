@@ -246,7 +246,7 @@ const filteredProducts = computed(() => {
     const matchesCategory = !filters.value.category || 
       product.category_id == filters.value.category
     const matchesStatus = !filters.value.status || 
-      (filters.value.status === 'active' ? product.is_active : !product.is_active)
+      (filters.value.status === 'active' ? product.status === 'published' : product.status !== 'published')
     const matchesBestseller = !filters.value.bestsellers || product.is_bestseller
     
     return matchesSearch && matchesCategory && matchesStatus && matchesBestseller
@@ -349,14 +349,16 @@ const animateTableRows = async () => {
   if (ctx) ctx.revert()
   
   ctx = gsap.context(() => {
-    gsap.from('.product-row', {
-      y: 20,
-      opacity: 0,
-      duration: 0.4,
-      stagger: 0.05,
-      ease: 'power2.out',
-      clearProps: 'all'
-    })
+    if (document.querySelector('.product-row')) {
+      gsap.from('.product-row', {
+        y: 20,
+        opacity: 0,
+        duration: 0.4,
+        stagger: 0.05,
+        ease: 'power2.out',
+        clearProps: 'all'
+      })
+    }
   })
 }
 
@@ -365,27 +367,27 @@ watch(filteredProducts, () => {
 })
 
 onMounted(async () => {
-  await loadProducts()
-  await loadCategories()
+  // Attendre que le DOM soit complètement rendu pour éviter les erreurs GSAP "target not found"
+  await nextTick()
+  
+  // Charger les produits et catégories en parallèle pour éviter les blocages
+  await Promise.all([
+    loadProducts(),
+    loadCategories()
+  ])
   
   // Initial Entrance Animation
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
   
-  tl.from('.product-header', {
-    y: -30,
-    opacity: 0,
-    duration: 0.8
-  })
-  .from('.product-filter', {
-    y: -20,
-    opacity: 0,
-    duration: 0.6
-  }, '-=0.4')
-  .from('.product-table-container', {
-    y: 30,
-    opacity: 0,
-    duration: 0.8
-  }, '-=0.4')
+  if (document.querySelector('.product-header')) {
+    tl.from('.product-header', { y: -30, opacity: 0, duration: 0.8 })
+  }
+  if (document.querySelector('.product-filter')) {
+    tl.from('.product-filter', { y: -20, opacity: 0, duration: 0.6 }, '-=0.4')
+  }
+  if (document.querySelector('.product-table-container')) {
+    tl.from('.product-table-container', { y: 30, opacity: 0, duration: 0.8 }, '-=0.4')
+  }
   
   // Trigger row animation
   animateTableRows()

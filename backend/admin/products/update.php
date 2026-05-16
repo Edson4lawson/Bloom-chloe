@@ -5,6 +5,13 @@
 
 require_once __DIR__ . '/../../config/headers.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../middleware/auth.php';
+
+// Authentifier l'administrateur
+$user = authenticate();
+if ($user['role'] !== 'admin') {
+    sendJsonResponse(['error' => 'Accès refusé'], 403);
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJsonResponse(['error' => 'Méthode non autorisée'], 405);

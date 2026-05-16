@@ -6,7 +6,7 @@ export const adminService = {
   // ═══════════════════════════════════════════
   
   async getStats() {
-    const response = await api.get('/admin/analytics/summary.php')
+    const response = await api.get(`/admin/analytics/summary.php?t=${Date.now()}`)
     return {
       success: true,
       stats: {
@@ -16,6 +16,8 @@ export const adminService = {
         totalRevenue: response.data.revenue_total || 0,
         recentOrders: response.data.recent_orders || [],
         recentProducts: response.data.recent_products || [],
+        topProducts: response.data.top_products || [],
+        orderStatusCounts: response.data.order_status_counts || [],
         monthlySales: response.data.monthly_sales || []
       }
     }
@@ -23,7 +25,7 @@ export const adminService = {
 
   async getAnalytics(period = '30d') {
     try {
-      const response = await api.get('/admin/analytics/detailed.php', { params: { period } })
+      const response = await api.get(`/admin/analytics/detailed.php?period=${period}&t=${Date.now()}`)
       return { success: true, analytics: response.data }
     } catch {
       return { success: false, analytics: {} }
@@ -35,16 +37,30 @@ export const adminService = {
   // ═══════════════════════════════════════════
 
   async getProducts(params = {}) {
-    const response = await api.get('/products/get_all.php', { params })
+    const response = await api.get('/products/get_all.php', { 
+      params: { ...params, t: Date.now() } 
+    })
+    
+    // Extraire proprement les données pour éviter le "raw.map is not a function"
     const raw = response.data
+    let productList = []
+    
+    if (Array.isArray(raw)) {
+      productList = raw
+    } else if (raw && Array.isArray(raw.data)) {
+      productList = raw.data
+    } else if (raw && Array.isArray(raw.products)) {
+      productList = raw.products
+    }
+    
     return {
       success: true,
-      products: raw.data || raw.products || raw || []
+      products: productList
     }
   },
 
   async getProductById(id) {
-    const response = await api.get(`/products/get_one.php?id=${id}`)
+    const response = await api.get(`/products/get_one.php?id=${id}&t=${Date.now()}`)
     return { success: true, product: response.data }
   },
 
@@ -106,10 +122,16 @@ export const adminService = {
   // ═══════════════════════════════════════════
 
   async getCategories() {
-    const response = await api.get('/categories/get_all.php')
+    const response = await api.get(`/categories/get_all.php?t=${Date.now()}`)
+    const raw = response.data
+    let list = []
+    if (Array.isArray(raw)) list = raw
+    else if (raw && Array.isArray(raw.data)) list = raw.data
+    else if (raw && Array.isArray(raw.categories)) list = raw.categories
+    
     return {
       success: true,
-      categories: response.data.data || response.data.categories || response.data || []
+      categories: list
     }
   },
 
@@ -133,15 +155,23 @@ export const adminService = {
   // ═══════════════════════════════════════════
 
   async getOrders(params = {}) {
-    const response = await api.get('/orders/get.php', { params })
+    const response = await api.get('/orders/get.php', { 
+      params: { ...params, t: Date.now() } 
+    })
+    const raw = response.data
+    let list = []
+    if (Array.isArray(raw)) list = raw
+    else if (raw && Array.isArray(raw.data)) list = raw.data
+    else if (raw && Array.isArray(raw.orders)) list = raw.orders
+
     return {
       success: true,
-      orders: response.data.orders || response.data || []
+      orders: list
     }
   },
 
   async getOrderDetail(orderId) {
-    const response = await api.get(`/orders/get_one.php?id=${orderId}`)
+    const response = await api.get(`/orders/get_one.php?id=${orderId}&t=${Date.now()}`)
     return {
       success: true,
       order: response.data
@@ -166,15 +196,24 @@ export const adminService = {
   // ═══════════════════════════════════════════
 
   async getCustomers(params = {}) {
-    const response = await api.get('/admin/users/get_all.php', { params })
+    const response = await api.get('/admin/users/get_all.php', { 
+      params: { ...params, t: Date.now() } 
+    })
+    const raw = response.data
+    let list = []
+    if (Array.isArray(raw)) list = raw
+    else if (raw && Array.isArray(raw.data)) list = raw.data
+    else if (raw && Array.isArray(raw.customers)) list = raw.customers
+    else if (raw && Array.isArray(raw.users)) list = raw.users
+
     return {
       success: true,
-      customers: response.data.customers || response.data.users || response.data || []
+      customers: list
     }
   },
 
   async getCustomerDetail(userId) {
-    const response = await api.get(`/admin/users/get_one.php?id=${userId}`)
+    const response = await api.get(`/admin/users/get_one.php?id=${userId}&t=${Date.now()}`)
     return { success: true, customer: response.data }
   },
 

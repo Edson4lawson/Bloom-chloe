@@ -1,8 +1,8 @@
-﻿/**
+/**
  * Utilitaire pour construire les URLs d'images produits
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 /**
  * Construit l'URL absolue d'une image produit

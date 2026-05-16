@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <div class="relative overflow-hidden" :class="containerClass">
     <!-- Placeholder avec blur pendant le chargement -->
     <div 
-      v-if="!loaded" 
+      v-show="!loaded" 
       class="absolute inset-0 bg-gradient-to-br from-purple-100 to-purple-50 animate-pulse"
       :style="placeholderStyle"
     ></div>
@@ -11,6 +11,7 @@
     <img 
       ref="imgRef"
       :src="imageSrc"
+      :key="imageSrc"
       :alt="alt"
       :loading="eager ? 'eager' : 'lazy'"
       :decoding="eager ? 'sync' : 'async'"
@@ -35,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 
 const props = defineProps({
@@ -77,6 +78,12 @@ const props = defineProps({
 const imgRef = ref(null);
 const loaded = ref(false);
 const error = ref(false);
+
+// Reset state when src changes
+watch(() => props.src, () => {
+  loaded.value = false;
+  error.value = false;
+});
 
 // Calculer le src de l'image (pourrait être optimisé via CDN)
 const imageSrc = computed(() => props.src);

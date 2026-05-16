@@ -20,32 +20,36 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatsCard
         title="Total Produits"
-        :value="stats.totalProducts"
+        :value="stats?.totalProducts ?? 0"
         :icon="Package"
         color="purple"
         class="stats-card-anim mb-4"
+        :loading="isLoading"
       />
       <StatsCard
         title="Commandes"
-        :value="stats.totalOrders"
+        :value="stats?.totalOrders ?? 0"
         :icon="ShoppingCart"
         color="purple"
         class="stats-card-anim mb-4"
+        :loading="isLoading"
       />
       <StatsCard
         title="Clients"
-        :value="stats.totalClients"
+        :value="stats?.totalClients ?? 0"
         :icon="Users"
         color="purple"
         class="stats-card-anim mb-4"
+        :loading="isLoading"
       />
       <StatsCard
         title="Chiffre d'Affaires"
-        :value="stats.totalRevenue"
+        :value="stats?.totalRevenue ?? 0"
         :icon="Wallet"
         suffix="FCFA"
         color="purple"
         class="stats-card-anim mb-4"
+        :loading="isLoading"
       />
     </div>
 
@@ -64,7 +68,15 @@
           </div>
         </div>
         <div class="h-80">
-          <Line :data="revenueChartData" :options="chartOptions" />
+          <Line 
+            v-if="revenueChartData.labels.length > 0" 
+            :key="stats.totalRevenue"
+            :data="revenueChartData" 
+            :options="chartOptions" 
+          />
+          <div v-else class="h-full flex items-center justify-center text-slate-400 italic text-sm">
+            Chargement des données...
+          </div>
         </div>
       </div>
 
@@ -86,13 +98,26 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50 dark:divide-slate-500">
-              <tr v-for="order in stats.recentOrders" :key="order.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
+              <!-- Squelettes de chargement -->
+              <tr v-if="isLoading" v-for="i in 3" :key="'skeleton-'+i" class="animate-pulse">
+                <td class="px-8 py-4"><div class="h-4 bg-slate-100 dark:bg-slate-700 rounded w-24 mb-1"></div><div class="h-2 bg-slate-50 dark:bg-slate-800 rounded w-16"></div></td>
+                <td class="px-8 py-4"><div class="h-4 bg-slate-100 dark:bg-slate-700 rounded w-16 mx-auto"></div></td>
+                <td class="px-8 py-4 text-right"><div class="h-6 bg-slate-100 dark:bg-slate-700 rounded-full w-20 ml-auto"></div></td>
+              </tr>
+              <!-- État vide -->
+              <tr v-else-if="stats.recentOrders.length === 0">
+                <td colspan="3" class="px-8 py-12 text-center text-slate-400 dark:text-slate-500 text-sm font-medium italic">
+                  Aucune commande récente
+                </td>
+              </tr>
+              <!-- Liste des commandes -->
+              <tr v-else v-for="order in stats.recentOrders" :key="order.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
                 <td class="px-8 py-4 whitespace-nowrap">
                   <div class="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 transition-colors">{{ order.user_name }}</div>
                   <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tighter uppercase">ID #{{ order.id }} • {{ formatDate(order.created_at) }}</div>
                 </td>
                 <td class="px-8 py-4 whitespace-nowrap text-center text-sm font-black text-slate-800 dark:text-white">
-                  {{ order.total_amount }}FCFA
+                  {{ formatNumber(order.total_amount) }} FCFA
                 </td>
                 <td class="px-8 py-4 whitespace-nowrap text-right">
                   <span :class="getStatusClass(order.status)" class="px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full">
@@ -100,23 +125,20 @@
                   </span>
                 </td>
               </tr>
-              <tr v-if="stats.recentOrders.length === 0">
-                <td colspan="3" class="px-8 py-10 text-center text-slate-400 text-sm italic">Aucune commande récente</td>
-              </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- Section Accès Rapide : Derniers Produits et Catégories -->
+    <!-- Section Accès Rapide : Meilleurs Produits et Catégories -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Aperçu des Nouveaux Produits -->
-      <div class="dashboard-quick-view mt-8 lg:col-span-2 bg-white dark:bg-[rgb(43,44,43)] rounded-3xl shadow-sm border border-slate-100 dark:border-slate-500 p-8 hover:shadow-xl transition-all duration-500 ">
+      <!-- Aperçu des Nouveaux Produits (Dashboard) -->
+      <div class="dashboard-quick-view mt-8 lg:col-span-2 bg-white dark:bg-[rgb(43,44,43)] rounded-3xl shadow-sm border border-slate-100 dark:border-slate-500 p-8 hover:shadow-xl transition-all duration-500">
         <div class="flex items-center justify-between mb-8 ">
           <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center">
-            <LucideBookSearch class="w-5 h-5 mr-3 text-slate-700 dark:text-purple-400" />
+            <LucideBookSearch class="w-5 h-5 mr-3 text-purple-400" />
              Catalogue Produit
           </h2>
           <button @click="router.push('/bloom-manager/products')" class="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors">
@@ -130,7 +152,7 @@
             </div>
             <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{{ p.name }}</h4>
             <div class="flex items-center justify-between mt-1">
-              <span class="text-sm text-purple-600 dark:text-purple-400 font-bold">{{ p.price }}FCFA</span>
+              <span class="text-sm text-purple-600 dark:text-purple-400 font-bold">{{ formatNumber(p.price) }} FCFA</span>
               <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">{{ p.category_name }}</span>
             </div>
           </div>
@@ -145,7 +167,7 @@
             Catégories
           </h2>
           <div class="space-y-4 flex-1">
-            <div v-for="cat in categories.slice(0, 5)" :key="cat.id" class="flex items-center justify-between border-b border-white/5 pb-2">
+            <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between border-b border-white/5 pb-2">
               <span class="text-sm font-medium text-white/80">{{ cat.name }}</span>
               <span class="px-2 py-0.5 rounded-lg bg-white/10 text-[10px] font-black">{{ cat.product_count }} items</span>
             </div>
@@ -211,6 +233,7 @@ const stats = ref({
 })
 const recentProducts = ref([])
 const categories = ref([])
+const isLoading = ref(true)
 
 let ctxn = null;
 
@@ -225,88 +248,74 @@ const currentDate = computed(() => {
  * Charge les données consolidées depuis l'API Admin
  */
 const loadStats = async () => {
+  isLoading.value = true
   try {
-    const response = await adminService.getStats()
-    if (response.success) stats.value = response.stats
-    
-    // Chargement complémentaire pour les aperçus produits et catégories
-    const [prodRes, catRes] = await Promise.all([
-      adminService.getProducts(),
+    // Lancer toutes les requêtes en parallèle pour un chargement ultra-rapide
+    const [statsRes, catRes] = await Promise.all([
+      adminService.getStats(),
       adminService.getCategories()
     ]);
 
-    if (prodRes.success && Array.isArray(prodRes.products) && prodRes.products.length > 0) {
-      recentProducts.value = prodRes.products
-    } else if (response.success && Array.isArray(response.stats.recentProducts)) {
-      recentProducts.value = response.stats.recentProducts
-    } else {
-      recentProducts.value = []
+    if (statsRes.success) {
+      stats.value = statsRes.stats;
+      recentProducts.value = statsRes.stats.recentProducts || [];
     }
     
     if (catRes.success) {
-      categories.value = Array.isArray(catRes.categories) ? catRes.categories : []
+      categories.value = Array.isArray(catRes.categories) ? catRes.categories : [];
     }
     
+    console.log('[Dashboard] Données chargées:', { stats: stats.value, recentProducts: recentProducts.value });
+
     // Lancer l'animation une fois les données chargées
     await nextTick();
     runAnimations();
-
   } catch (error) {
-    console.error('Erreur Dashboard Admin:', error)
+    console.error('Erreur Critique Dashboard Admin:', error);
+    addNotification({ type: 'error', message: 'Erreur lors du chargement des données du dashboard.' });
+  } finally {
+    isLoading.value = false
   }
 }
 
 /**
  * Exécute les animations GSAP
  */
-const runAnimations = () => {
+const runAnimations = async () => {
+  await nextTick();
   if (ctxn) ctxn.revert();
   
   ctxn = gsap.context(() => {
+    // On ne cache pas les éléments par défaut pour éviter l'écran blanc en cas d'erreur JS
     const tl = gsap.timeline({ defaults: { ease: 'power3.out', duration: 0.8 } });
 
-    // 1. Header
-    tl.from(".dashboard-header", {
-        y: -30,
-        opacity: 0
-    })
+    if (document.querySelector(".dashboard-header")) {
+      tl.from(".dashboard-header", { y: -20, duration: 0.8 });
+    }
 
-    // 2. Stats Cards
-    tl.from(".stats-card-anim", {
-        scale: 0.9,
-        y: 30,
-        opacity: 0,
-        stagger: 0.1,
-        ease: "back.out(1.7)"
-    }, "-=0.4")
+    if (document.querySelector(".stats-card-anim")) {
+      tl.from(".stats-card-anim", {
+          y: 20,
+          stagger: 0.05,
+          ease: "back.out(1.2)"
+      }, "-=0.4");
+    }
 
-    // 3. Main Content (Chart & Table)
-    tl.from(".dashboard-chart", {
-        x: -50,
-        opacity: 0,
-        duration: 1
-    }, "-=0.6")
+    if (document.querySelector(".dashboard-chart")) {
+      tl.from(".dashboard-chart", { x: -30, clearProps: 'all' }, "-=0.6");
+    }
 
-    tl.from(".dashboard-table", {
-        x: 50,
-        opacity: 0,
-        duration: 1
-    }, "-=0.8")
+    if (document.querySelector(".dashboard-table")) {
+      tl.from(".dashboard-table", { x: 30, clearProps: 'all' }, "-=0.8");
+    }
 
+    if (document.querySelector(".dashboard-quick-view")) {
+      tl.from(".dashboard-quick-view", { y: 30 }, "-=0.6");
+    }
 
-    // 4. Products & Categories (Bottom)
-    tl.from(".dashboard-quick-view", {
-        y: 50,
-        opacity: 0,
-        duration: 0.8
-    }, "-=0.6")
-
-    tl.from(".dashboard-category", {
-        scale: 0.95,
-        opacity: 0,
-        duration: 1,
-        ease: "elastic.out(1, 0.7)"
-    }, "-=0.6")
+    if (document.querySelector(".dashboard-category")) {
+      tl.from(".dashboard-category", { scale: 0.98 }, "-=0.6");
+    }
   });
 }
 
@@ -321,18 +330,40 @@ const formatNumber = (num) => {
  * Prépare les données pour le graphique linéaire de revenus
  */
 const revenueChartData = computed(() => {
-  const sales = stats.value.monthlySales || []
-  return {
-    labels: sales.map(s => s.month),
-    datasets: [{
-      label: 'Revenus (FCFA)',
-      backgroundColor: 'rgba(59, 130, 246, 0.05)',
-      borderColor: '#3b82f6',
-      pointBackgroundColor: '#3b82f6',
-      data: sales.map(s => s.total || s.revenue || 0),
-      fill: true,
-      tension: 0.4 // Courbe lissée (smooth)
-    }]
+  try {
+    let sales = [...(stats.value?.monthlySales || [])]
+    
+    // Si on n'a qu'un seul mois (début d'activité), on ajoute un point 0 au début pour dessiner une ligne
+    if (sales.length === 1) {
+      sales = [{ month: 'Début', revenue: 0 }, ...sales]
+    }
+    
+    // Création d'un dégradé pour l'aire sous la courbe
+    const ctx = document.createElement('canvas').getContext('2d')
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+    gradient.addColorStop(0, 'rgba(192, 38, 211, 0.4)')
+    gradient.addColorStop(1, 'rgba(192, 38, 211, 0)')
+    
+    return {
+      labels: sales.map(s => s.month || ''),
+      datasets: [{
+        label: 'Revenus (FCFA)',
+        data: sales.map(s => parseFloat(s.revenue || s.total || 0)),
+        borderColor: '#c026d3',
+        borderWidth: 4,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#c026d3',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4
+      }]
+    }
+  } catch (e) {
+    console.error('Erreur revenueChartData:', e);
+    return { labels: [], datasets: [] };
   }
 })
 
@@ -342,22 +373,42 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: { display: false },
-    tooltip: { 
-      backgroundColor: '#1e293b', 
-      padding: 12, 
-      cornerRadius: 12,
-      bodyFont: { weight: 'bold' }
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+      titleColor: '#fff',
+      bodyColor: '#fff',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      padding: 12,
+      displayColors: false,
+      callbacks: {
+        label: function(context) {
+          return new Intl.NumberFormat('fr-FR').format(context.raw) + ' FCFA';
+        }
+      }
     }
   },
   scales: {
-    y: { 
-      beginAtZero: true, 
-      grid: { drawBorder: false, color: '#f1f5f9' },
-      ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' }
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: 'rgba(148, 163, 184, 0.1)', // Couleur ardoise légère (visible partout)
+        drawBorder: false
+      },
+      ticks: {
+        color: '#94a3b8', // Slate 400 (lisible sur blanc et noir)
+        font: { size: 11, weight: 'bold' },
+        callback: (value) => value >= 1000 ? (value/1000) + 'k' : value
+      }
     },
-    x: { 
+    x: {
       grid: { display: false },
-      ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' }
+      ticks: {
+        color: '#94a3b8',
+        font: { size: 11, weight: 'bold' }
+      }
     }
   }
 }
@@ -386,31 +437,53 @@ const formatDate = (dateString) => {
 const getImageUrl = (url) => getProductImageUrl(url)
 
 // Initialisation au montage du composant
-onMounted(() => {
-  loadStats()
-  
-  // Initialisation du flux SSE (Live updates)
-  eventSource = new EventSource('http://localhost:8080/admin/stream.php')
+// Initialisation du flux SSE (Live updates)
+const initSSE = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+  const token = localStorage.getItem('access_token')
+  if (eventSource) eventSource.close()
+  eventSource = new EventSource(`${apiUrl}/admin/stream.php?token=${token}`)
   
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
       
       if (data.type === 'new_order') {
-        // Notification verte pour les vraies commandes
-        addNotification({ type: 'success', message: data.message, duration: 8000 })
+        // Notification verte pour les vraies commandes uniquement
+        addNotification({ 
+          type: 'success', 
+          title: 'Nouvelle commande !',
+          message: data.message, 
+          duration: 8000 
+        })
         // Rafraichir les stats
         loadStats()
-      } else if (data.type === 'activity') {
-        // Notification discrète d'activité
-        addNotification({ type: 'info', message: data.message, duration: 4000 })
       }
     } catch (e) {
       console.error('Erreur traitement SSE', e)
     }
   }
-})
 
+  // Gestion de l'expiration du token SSE
+  eventSource.addEventListener('auth_error', async () => {
+    console.warn('SSE Auth error, tentative de refresh...')
+    eventSource.close()
+    const newToken = await authStore.refreshToken()
+    if (newToken) initSSE()
+  })
+}
+
+// Initialisation au montage du composant
+onMounted(async () => {
+  // 1. Priorité absolue : charger les données du Dashboard
+  await loadStats()
+  
+  // 2. Lancer le flux SSE seulement APRÈS un court délai pour laisser le serveur respirer
+  setTimeout(() => {
+    initSSE()
+  }, 1000)
+})
+ 
 onUnmounted(() => {
   if (ctxn) ctxn.revert();
   if (eventSource) eventSource.close();

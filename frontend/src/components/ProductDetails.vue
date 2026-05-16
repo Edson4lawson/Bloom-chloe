@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <Transition name="modal-fade">
     <div v-if="isOpen" class="fixed inset-0 z-[200] mt-0 md:mt-30 flex items-center justify-center px-4 pb-4 pt-24 md:p-6" role="dialog" aria-modal="true">
       <!-- Backdrop -->
@@ -42,7 +42,8 @@
               <div class="flex">
                 <Icon v-for="i in 5" :key="i" :icon="i <= Math.round(product.rating) ? 'solar:star-bold' : 'solar:star-linear'" class="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              <span class="text-xs md:text-sm text-gray-400 font-medium">({{ product.stock }} en stock)</span>
+              <span v-if="product.stock > 0" class="text-xs md:text-sm text-green-500 font-bold">({{ product.stock }} en stock)</span>
+              <span v-else class="text-xs md:text-sm text-rose-500 font-bold">(Rupture de stock)</span>
             </div>
 
             <h2 class="text-2xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-4 leading-tight tracking-tight">{{ product.title }}</h2>
@@ -73,19 +74,27 @@
           <!-- Actions -->
           <div class="pt-6 border-t border-gray-100 flex flex-col md:flex-row items-stretch md:items-center gap-4 mt-auto">
             <div class="flex items-center justify-between bg-gray-100 rounded-2xl p-2 md:w-auto">
-              <button @click="quantity > 1 && quantity--" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm hover:text-purple-600 transition-colors">
+              <button @click="quantity > 1 && quantity--" 
+                      :disabled="product.stock <= 0"
+                      class="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm hover:text-purple-600 transition-colors disabled:opacity-50">
                 <Icon icon="solar:minus-circle-linear" class="w-6 h-6" />
               </button>
-              <span class="w-12 text-center font-bold text-gray-900">{{ quantity }}</span>
-              <button @click="quantity++" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm hover:text-purple-600 transition-colors">
+              <span class="w-12 text-center font-bold text-gray-900">{{ product.stock > 0 ? quantity : 0 }}</span>
+              <button @click="quantity < product.stock ? quantity++ : null" 
+                      :disabled="product.stock <= 0 || quantity >= product.stock"
+                      class="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm hover:text-purple-600 transition-colors disabled:opacity-50">
                 <Icon icon="solar:add-circle-linear" class="w-6 h-6" />
               </button>
             </div>
 
-            <button @click="handleAddToCart" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-95">
+            <button v-if="product.stock > 0" @click="handleAddToCart" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3.5 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-95">
               <Icon icon="solar:bag-check-bold" class="w-6 h-6" />
               <span>AJOUTER - {{ (product.price * quantity) }} FCFA</span>
             </button>
+            <a v-else href="https://wa.me/22900000000" target="_blank" class="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl shadow-xl hover:bg-slate-900 transition-all">
+              <Icon icon="solar:chat-round-dots-bold" class="w-6 h-6" />
+              <span>S'INFORMER SUR LE STOCK</span>
+            </a>
             
             <button @click="toggleWishlist" class="hidden md:flex p-4 rounded-2xl bg-purple-50 text-purple-500 hover:bg-purple-200 hover:text-purple-600 transition-colors">
                <Icon :icon="wishlistStore.isInWishlist(product.id) ? 'solar:heart-bold' : 'solar:heart-linear'" class="w-6 h-6" />
@@ -129,9 +138,7 @@ const close = () => {
 
 const handleAddToCart = async () => {
   try {
-    for(let i=0; i<quantity.value; i++){
-        cartStore.addToCart(props.product);
-    }
+    await cartStore.addToCart(props.product, quantity.value);
     
     // Success Modal
     const Toast = Swal.mixin({

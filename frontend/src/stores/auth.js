@@ -134,6 +134,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Refresh the access token using the refresh token
+   */
+  const refreshToken = async () => {
+    try {
+      const response = await authService.refreshToken()
+      if (response.data?.access_token) {
+        localStorage.setItem('access_token', response.data.access_token)
+        return response.data.access_token
+      }
+      return null
+    } catch (err) {
+      console.error('Token refresh failed:', err)
+      clearAuth()
+      return null
+    }
+  }
+
   return {
     user,
     isAuthenticated,
@@ -143,7 +161,8 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     clearAuth,
-    syncAppData
+    syncAppData,
+    refreshToken
   }
 }, {
   persist: {
