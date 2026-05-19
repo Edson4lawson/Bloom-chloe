@@ -4,7 +4,7 @@
  * Ajoute les produits spécifiques avec la source 'store'
  */
 
-require_once __DIR__ . '/api/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "=== BLOOM-CHLOE — Seed de la Section Store ===\n\n";
 
@@ -20,33 +20,137 @@ while($row = $catStmt->fetch(PDO::FETCH_ASSOC)) {
 }
 
 $storeProducts = [
-    ['name' => 'Mini Valise de Maquillage', 'category' => 'Accessoire de beauté', 'price' => 25000, 'image' => 'store1.jpg', 'desc' => 'Une valise compacte et élégante pour transporter tous vos essentiels beauté.'],
-    ['name' => 'Set de Pinceaux Luxe', 'category' => 'Beauté et soin personnel', 'price' => 15000, 'image' => 'store2.jpg', 'desc' => '12 pinceaux professionnels en poils synthétiques ultra-doux.'],
-    ['name' => 'Miroir LED Tactile', 'category' => 'Accessoire de beauté', 'price' => 12500, 'image' => 'store3.jpg', 'desc' => 'Miroir avec éclairage ajustable pour un maquillage parfait.'],
-    ['name' => 'Organisateur Acrylique', 'category' => 'Accessoire', 'price' => 8500, 'image' => 'store4.jpg', 'desc' => 'Rangement transparent pour produits de beauté et bijoux.'],
-    ['name' => 'Trousse de Toilette Bloom', 'category' => 'Collection Bloom', 'price' => 5500, 'image' => 'store5.jpg', 'desc' => 'Trousse élégante et imperméable aux couleurs de Bloom.'],
-    ['name' => 'Kit Spa Maison', 'category' => 'Bien-être', 'price' => 18000, 'image' => 'store6.jpg', 'desc' => 'Tout le nécessaire pour une soirée détente à la maison.'],
+    [
+        'id' => 101, 
+        'name' => 'Couvre-matelas + taies imperméables', 
+        'category' => 'Maison & Confort', 
+        'price' => 7500, 
+        'image' => 'store1.jpg', 
+        'desc' => "Protège le matelas et les oreillers contre l'eau et les taches. Doux, respirant et très confortable pour un sommeil agréable."
+    ],
+    [
+        'id' => 102, 
+        'name' => "Table d'appoint (salon / salle à manger)", 
+        'category' => 'Maison & Confort', 
+        'price' => 14000, 
+        'image' => 'store2.jpg', 
+        'desc' => "Table pratique et élégante pour salon ou salle à manger. Idéale pour poser objets, boissons ou décoration."
+    ],
+    [
+        'id' => 103, 
+        'name' => 'Carafe + 4 verres', 
+        'category' => 'Cuisine & Art de la Table', 
+        'price' => 6500, 
+        'image' => 'store3.jpg', 
+        'desc' => "Ensemble pratique et élégant pour servir vos boissons. Parfait pour la maison ou les invités."
+    ],
+    [
+        'id' => 104, 
+        'name' => 'Chic gourde Thermos (maintien de température)', 
+        'category' => 'Maison & Confort', 
+        'price' => 4000, 
+        'image' => 'store4.jpg', 
+        'desc' => "Garde les boissons chaudes ou froides pendant plusieurs heures. Design chic, idéale pour le travail ou les déplacements."
+    ],
+    [
+        'id' => 105, 
+        'name' => 'Raquette anti-moustique', 
+        'category' => 'Entretien & Bricolage', 
+        'price' => 3000, 
+        'image' => 'store5.jpg', 
+        'desc' => "Ustensile efficace pour se débarrasser des insectes. Simple d'utilisation et efficace."
+    ],
+    [
+        'id' => 106, 
+        'name' => 'Kit perceuse', 
+        'category' => 'Entretien & Bricolage', 
+        'price' => 10000, 
+        'image' => 'store6.jpg', 
+        'desc' => "Kit complet pour bricolage et réparations à domicile. Pratique, robuste et polyvalent."
+    ],
+    [
+        'id' => 107, 
+        'name' => 'Serviette de bain compressée', 
+        'category' => 'Maison & Confort', 
+        'price' => 1000, 
+        'image' => 'store7.jpg', 
+        'desc' => "Compacte, légère et très absorbante. Idéale pour voyage, sport ou sorties."
+    ],
+    [
+        'id' => 108, 
+        'name' => 'Chic gourde', 
+        'category' => 'Maison & Confort', 
+        'price' => 4000, 
+        'image' => 'store8.jpg', 
+        'desc' => "Gourde moderne et pratique pour un usage quotidien. Facile à transporter et résistante."
+    ],
+    [
+        'id' => 109, 
+        'name' => 'Moulinex à sec', 
+        'category' => 'Cuisine & Art de la Table', 
+        'price' => 5500, 
+        'image' => 'store9.jpg', 
+        'desc' => "Permet de moudre rapidement épices et aliments secs. Pratique et indispensable en cuisine."
+    ],
+    [
+        'id' => 110, 
+        'name' => "Agrandisseur d'écran", 
+        'category' => 'High-Tech & Gadgets', 
+        'price' => 2600, 
+        'image' => 'store10.jpg', 
+        'desc' => "Agrandit l'écran du téléphone pour plus de confort visuel. Idéal pour vidéos et films."
+    ],
+    [
+        'id' => 111, 
+        'name' => 'Étagère de douche', 
+        'category' => 'Maison & Confort', 
+        'price' => 1500, 
+        'image' => 'store11.jpg', 
+        'desc' => "Rangement pratique pour accessoires de bain. Facile à installer et résistante à l'humidité."
+    ],
+    [
+        'id' => 112, 
+        'name' => 'Carafe + verres', 
+        'category' => 'Cuisine & Art de la Table', 
+        'price' => 7000, 
+        'image' => 'store12.jpg', 
+        'desc' => "Ensemble élégant pour servir toutes vos boissons. Idéal pour la maison ou le bureau."
+    ]
 ];
 
-$stmt = $pdo->prepare("INSERT INTO products (category_id, name, slug, description, price, stock, stock_quantity, image_url, rating, source, status) 
-    VALUES (:cat_id, :name, :slug, :desc, :price, 50, 50, :image, 4.8, 'store', 'published')
-    ON DUPLICATE KEY UPDATE source='store', image_url=VALUES(image_url)");
+$stmt = $pdo->prepare("
+    INSERT INTO products (id, category_id, name, slug, description, price, stock, stock_quantity, image_url, rating, source, status) 
+    VALUES (:id, :cat_id, :name, :slug, :desc, :price, 50, 50, :image, 4.8, 'store', 'published')
+    ON DUPLICATE KEY UPDATE 
+        category_id=VALUES(category_id),
+        name=VALUES(name),
+        slug=VALUES(slug),
+        description=VALUES(description),
+        price=VALUES(price),
+        image_url=VALUES(image_url)
+");
 
 $count = 0;
 foreach ($storeProducts as $p) {
-    $catId = $catMap[$p['category']] ?? 1;
-    $slug = 'store-' . strtolower(preg_replace('/[^a-z0-9]+/i', '-', $p['name']));
+    $catId = $catMap[$p['category']] ?? 35; // Default to Maison & Confort
+    
+    // Générer le slug (ex: couvre-matelas-taies-impermeables-101)
+    $cleanName = strtolower(trim($p['name']));
+    $cleanName = preg_replace('/[^a-z0-9\s-]/', '', $cleanName);
+    $cleanName = preg_replace('/[\s-]+/', '-', $cleanName);
+    $slug = trim($cleanName, '-') . '-' . $p['id'];
     
     $stmt->execute([
+        ':id' => $p['id'],
         ':cat_id' => $catId,
         ':name' => $p['name'],
         ':slug' => $slug,
         ':desc' => $p['desc'],
         ':price' => $p['price'],
-        ':image' => 'src/assets/' . $p['image']
+        ':image' => $p['image']
     ]);
     $count++;
     echo "[+] Store: {$p['name']}\n";
 }
 
-echo "\n✅ Successfully added $count store products!\n";
+echo "\n✅ Successfully seeded $count store products!\n";
