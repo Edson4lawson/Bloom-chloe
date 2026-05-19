@@ -159,6 +159,11 @@
                     <input type="text" v-model="userForm.phone" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 font-bold text-slate-900">
                   </div>
                 </div>
+                <!-- Adresse Field -->
+                <div class="space-y-2 md:col-span-2">
+                  <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adresse</label>
+                  <textarea v-model="userForm.address" rows="3" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 font-bold text-slate-900" placeholder="Votre adresse complète..."></textarea>
+                </div>
               </div>
               <div class="flex justify-end pt-6">
                 <button @click="updateProfile" class="px-10 py-5 bg-slate-900 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-purple-600 transition-all shadow-xl shadow-slate-900/10">Sauvegarder les modifications</button>
@@ -169,21 +174,24 @@
             <div v-if="activeTab === 'addresses'" class="space-y-10">
               <div class="flex items-center justify-between">
                 <h1 class="text-3xl font-black text-slate-900 italic uppercase">Mes <span class="text-purple-600">Adresses</span></h1>
-                <button class="flex items-center gap-2 text-purple-600 font-bold uppercase tracking-widest text-[10px]">
-                  <Icon icon="solar:add-circle-bold" class="w-5 h-5" /> Ajouter
-                </button>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="p-8 border border-slate-100 bg-slate-50 rounded-[2rem] relative group">
+                <div v-if="user?.address" class="p-8 border border-slate-100 bg-slate-50 rounded-[2rem] relative group w-full">
                   <div class="flex items-center gap-3 mb-4">
                     <Icon icon="solar:home-bold-duotone" class="w-6 h-6 text-purple-600" />
-                    <h4 class="font-black text-slate-900 uppercase text-xs tracking-widest">Résidence Principale</h4>
+                    <h4 class="font-black text-slate-900 uppercase text-xs tracking-widest">Adresse Enregistrée</h4>
                   </div>
-                  <p class="text-slate-500 font-bold leading-relaxed">Cotonou, Quartier Fidjrossé<br>Rue 1245, Porte 254<br>Bénin</p>
-                  <div class="mt-6 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="text-[10px] font-black text-slate-900 uppercase tracking-widest underline">Modifier</button>
-                    <button class="text-[10px] font-black text-rose-500 uppercase tracking-widest underline">Supprimer</button>
+                  <p class="text-slate-500 font-bold leading-relaxed whitespace-pre-line">{{ user.address }}</p>
+                  <div class="mt-6 flex gap-4">
+                    <button @click="activeTab = 'profile'" class="text-[10px] font-black text-purple-600 uppercase tracking-widest underline">Modifier dans mon profil</button>
                   </div>
+                </div>
+                <div v-else class="p-8 border border-slate-100 bg-slate-50 rounded-[2rem] text-center w-full md:col-span-2">
+                  <Icon icon="solar:map-point-bold-duotone" class="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                  <p class="text-slate-400 font-bold mb-4">Aucune adresse enregistrée pour le moment.</p>
+                  <button @click="activeTab = 'profile'" class="px-6 py-3 bg-purple-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-purple-700 transition-all">
+                    Ajouter une adresse
+                  </button>
                 </div>
               </div>
             </div>
@@ -196,7 +204,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useAuthStore } from '../stores/auth';
 import { useWishlistStore } from '../stores/wishlist';
@@ -220,10 +228,21 @@ const menuItems = [
 ];
 
 const userForm = ref({
-  first_name: user.value?.first_name || '',
-  last_name: user.value?.last_name || '',
-  phone: user.value?.phone || '',
+  first_name: '',
+  last_name: '',
+  phone: '',
+  address: '',
 });
+
+// Watch user info updates to sync with form
+watch(user, (newUser) => {
+  if (newUser) {
+    userForm.value.first_name = newUser.first_name || '';
+    userForm.value.last_name = newUser.last_name || '';
+    userForm.value.phone = newUser.phone || '';
+    userForm.value.address = newUser.address || '';
+  }
+}, { immediate: true });
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
@@ -270,10 +289,20 @@ const handleLogout = async () => {
 
 const updateProfile = async () => {
   try {
-    // await api.post('/auth/update_profile.php', userForm.value);
-    Swal.fire({ icon: 'success', title: 'Profil mis à jour !', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+    await authStore.updateProfile(userForm.value);
+    Swal.fire({ 
+      icon: 'success', 
+      title: 'Profil mis à jour !', 
+      toast: true, 
+      position: 'top-end', 
+      showConfirmButton: false, 
+      timer: 3000 
+    });
   } catch (err) {
-    Swal.fire({ icon: 'error', title: 'Erreur lors de la mise à jour' });
+    Swal.fire({ 
+      icon: 'error', 
+      title: err || 'Erreur lors de la mise à jour' 
+    });
   }
 };
 

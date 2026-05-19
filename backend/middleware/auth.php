@@ -50,7 +50,7 @@ function authenticate($lenient = false) {
     }
     
     // Vérifier le token dans la base de données
-    $query = 'SELECT id, email, first_name, last_name, role FROM users WHERE token = ?';
+    $query = 'SELECT id, email, first_name, last_name, phone, address, role FROM users WHERE token = ?';
     if (!$lenient) {
         $query .= ' AND token_expires_at > NOW()';
     }

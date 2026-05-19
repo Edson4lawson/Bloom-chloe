@@ -31,7 +31,7 @@ if (empty($refreshToken)) {
 try {
     // Vérifier le refresh token dans la base
     $stmt = $pdo->prepare('
-        SELECT rt.*, u.id as user_id, u.email, u.first_name, u.last_name, u.role 
+        SELECT rt.*, u.id as user_id, u.email, u.first_name, u.last_name, u.phone, u.address, u.role 
         FROM refresh_tokens rt
         INNER JOIN users u ON rt.user_id = u.id
         WHERE rt.token = ? 
@@ -90,6 +90,8 @@ try {
             'email' => $tokenData['email'],
             'first_name' => $tokenData['first_name'],
             'last_name' => $tokenData['last_name'],
+            'phone' => $tokenData['phone'],
+            'address' => $tokenData['address'],
             'role' => $tokenData['role']
         ]
     ]);

@@ -130,6 +130,8 @@ try {
         'email' => $email,
         'first_name' => trim($data['first_name']),
         'last_name' => trim($data['last_name']),
+        'phone' => trim($data['phone'] ?? ''),
+        'address' => trim($data['address'] ?? ''),
         'role' => 'customer',
         'email_verified' => false
     ];

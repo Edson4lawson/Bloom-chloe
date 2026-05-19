@@ -152,6 +152,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Update user profile
+   */
+  const updateProfile = async (profileData) => {
+    loading.value = true
+    try {
+      const response = await authService.updateProfile(profileData)
+      const data = response.data
+      if (data.user) {
+        user.value = data.user
+        localStorage.setItem('user', JSON.stringify(user.value))
+      }
+      return response
+    } catch (err) {
+      throw err.response?.data?.error || err.message || 'Erreur lors de la mise à jour'
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     isAuthenticated,
@@ -162,7 +182,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clearAuth,
     syncAppData,
-    refreshToken
+    refreshToken,
+    updateProfile
   }
 }, {
   persist: {

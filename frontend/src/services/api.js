@@ -267,7 +267,18 @@ export const authService = {
     /**
      * Récupérer le token actuel
      */
-    getToken: () => localStorage.getItem('access_token')
+    getToken: () => localStorage.getItem('access_token'),
+
+    /**
+     * Mettre à jour le profil de l'utilisateur
+     */
+    updateProfile: async (profileData) => {
+        const response = await api.post('/auth/update_profile.php', profileData);
+        if (response.data.user) {
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+        }
+        return response;
+    }
 };
 
 export default api;
