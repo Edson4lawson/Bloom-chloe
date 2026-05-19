@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { cartService } from '@/services/api'
 import { useNotifications } from '@/services/notificationService.js'
+import { getProductImageUrl } from '@/utils/imageHelper'
 
 /**
  * Cart Store — Gère le panier avec synchronisation backend
@@ -93,7 +94,7 @@ export const useCartStore = defineStore('cart', () => {
             title: product.title || product.name,
             price: parseFloat(product.price) || 0,
             quantity: stockAvailable,
-            thumbnail: product.thumbnail || product.image_url,
+            thumbnail: getProductImageUrl(product.thumbnail || product.image_url),
             category: product.category || product.category_name,
             slug: product.slug
           })
@@ -111,7 +112,7 @@ export const useCartStore = defineStore('cart', () => {
         title: product.title || product.name,
         price: parseFloat(product.price) || 0,
         quantity: qty,
-        thumbnail: product.thumbnail || product.image_url,
+        thumbnail: getProductImageUrl(product.thumbnail || product.image_url),
         category: product.category || product.category_name,
         slug: product.slug
       })
@@ -209,7 +210,7 @@ export const useCartStore = defineStore('cart', () => {
             title: bi.product_name || bi.name || bi.title,
             price: parseFloat(bi.price) || 0,
             quantity: parseInt(bi.quantity) || 1,
-            thumbnail: bi.image_url || bi.thumbnail,
+            thumbnail: getProductImageUrl(bi.image_url || bi.thumbnail),
             category: bi.category_name || bi.category,
             slug: bi.slug
           })

@@ -38,10 +38,10 @@
             <div v-else class="space-y-6">
               <div v-for="item in cartStore.items" :key="item.id" class="flex items-center space-x-4 p-3 rounded-2xl border border-gray-50 hover:bg-gray-50 transition-colors group">
                 <div class="w-20 h-20 flex-shrink-0 bg-purple-100 rounded-xl overflow-hidden">
-                  <img :src="item.image || '/placeholder-perfume.jpg'" :alt="item.name" class="w-full h-full object-cover" />
+                  <img :src="item.thumbnail || '/placeholder-perfume.jpg'" :alt="item.title" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h4 class="font-bold text-gray-800 truncate">{{ item.name }}</h4>
+                  <h4 class="font-bold text-gray-800 truncate">{{ item.title }}</h4>
                   <p class="text-purple-600 font-bold mb-2">{{ item.price }} Fcfa</p>
                   
                   <!-- Quantity Controls -->
