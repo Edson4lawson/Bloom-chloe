@@ -63,9 +63,13 @@
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
         <div v-for="(product, index) in filteredProducts.slice(0, visibleCount)" :key="product.id" data-aos="fade-up" :data-aos-delay="index % 4 * 100" class="group">
           <!-- Card Image & Actions -->
-          <div class="relative bg-slate-50 rounded-[2.5rem] p-3 aspect-[4/5] overflow-hidden mb-6 transition-all duration-500 group-hover:bg-white group-hover:shadow-2xl group-hover:shadow-slate-200/50 border border-transparent group-hover:border-slate-100">
-            <div @click="goToProduct(product)" class="w-full h-full rounded-[2rem] overflow-hidden cursor-pointer">
-              <img :src="product.thumbnail" :alt="product.title" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+          <div class="relative bg-slate-50 rounded-3xl p-3 aspect-[4/5] overflow-hidden mb-6 transition-all duration-500 group-hover:bg-white group-hover:shadow-2xl group-hover:shadow-slate-200/50 border border-transparent group-hover:border-slate-100">
+            <div @click="goToProduct(product)" class="w-full h-full rounded-2xl overflow-hidden cursor-pointer">
+              <OptimizedImage 
+                :src="product.thumbnail" 
+                :alt="product.title" 
+                imageClass="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+              />
             </div>
 
             <!-- Quick Action Overlay -->
@@ -110,6 +114,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
+import OptimizedImage from './OptimizedImage.vue';
 import { useProductStore } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 import { useWishlistStore } from '../stores/wishlist';
