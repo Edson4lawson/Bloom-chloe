@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <Transition name="slide-right">
     <div v-if="isOpen" class="fixed inset-0 z-[200] overflow-hidden">
       <!-- Overlay -->
@@ -38,7 +38,7 @@
             <div v-else class="space-y-6">
               <div v-for="item in wishlistStore.items" :key="item.id" class="flex items-center space-x-4 p-3 rounded-2xl border border-gray-50 hover:bg-gray-50 transition-colors group">
                 <div class="w-20 h-20 flex-shrink-0 bg-purple-50 rounded-xl overflow-hidden relative">
-                  <img :src="item.image || '/placeholder-perfume.jpg'" :alt="item.name" class="w-full h-full object-cover" />
+                  <img :src="item.thumbnail || '/placeholder-perfume.jpg'" :alt="item.title" class="w-full h-full object-cover" />
                   <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                      <button @click="addToCart(item)" class="p-1.5 bg-white rounded-full text-purple-600 hover:text-purple-700 shadow-sm" title="Ajouter au panier">
                         <Icon icon="solar:cart-plus-bold" class="w-5 h-5" />
@@ -47,7 +47,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{{ item.category }}</span>
-                  <h4 class="font-bold text-gray-800 truncate">{{ item.name }}</h4>
+                  <h4 class="font-bold text-gray-800 truncate">{{ item.title }}</h4>
                   <p class="text-purple-600 font-bold mb-2">{{ item.price }} Fcfa</p>
                 </div>
                 <button @click="wishlistStore.removeFromWishlist(item.id)" class="p-2 text-gray-300 hover:text-purple-500 transition-colors">

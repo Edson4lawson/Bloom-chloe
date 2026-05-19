@@ -49,7 +49,22 @@ export const useCartStore = defineStore('cart', () => {
     if (!isValidProductId(productId)) return
 
     // Récupération du stock réel (soit depuis l'objet passé, soit depuis le store)
-    const stockAvailable = parseInt(product.stock_quantity || product.stock || 0, 10)
+    let stockAvailable = 0
+    if (product.stock_quantity !== undefined && product.stock_quantity !== null) {
+      stockAvailable = parseInt(product.stock_quantity, 10)
+    } else if (product.stock !== undefined && product.stock !== null) {
+      stockAvailable = parseInt(product.stock, 10)
+    } else {
+      // Rechercher dans le productStore
+      const productStore = (await import('./products')).useProductStore()
+      const dbProduct = productStore.getProductById(productId)
+      if (dbProduct) {
+        stockAvailable = parseInt(dbProduct.stock, 10)
+      } else {
+        // Fallback à 999 si le produit n'est pas trouvé dans le store pour éviter de bloquer l'ajout
+        stockAvailable = 999
+      }
+    }
     const existingIndex = items.value.findIndex(item => item.id === productId)
     const currentQtyInCart = existingIndex !== -1 ? items.value[existingIndex].quantity : 0
     const totalRequested = currentQtyInCart + qty
