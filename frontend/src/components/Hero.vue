@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="relative container mx-auto px-4 md:px-6 pb-16 min-h-[90vh] flex items-center"
     id="hero">
     <!-- Floating shapes for background depth -->
@@ -39,9 +39,9 @@
               </div>
             </button>
             <button @click="scrollToStore"
-              class="h-16 px-8 rounded-full border-2 border-purple-200 text-purple-700 font-bold hover:bg-purple-80 transition-colors"
+              class="h-16 px-8 rounded-full border-2 border-purple-200 text-purple-700 font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-colors"
               data-aos="fade-up" data-aos-delay="350">
-               Nos secrets
+               Nos nouveautés
             </button>
           </div>
         </div>
