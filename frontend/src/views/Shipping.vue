@@ -85,7 +85,7 @@
                 <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center flex-shrink-0 font-bold transition-transform group-hover:scale-110">1</div>
                 <div>
                   <h4 class="text-slate-900 font-bold mb-1">Validation</h4>
-                  <p class="text-slate-500 text-base">Dès confirmation de votre paiement Mobile Money ou virement.</p>
+                  <p class="text-slate-500 text-base">Dès confirmation de votre paiement (MTN, Celtis ou Virement UBA).</p>
                 </div>
               </div>
               <div class="flex gap-6 items-start group">

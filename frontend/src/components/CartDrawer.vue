@@ -88,7 +88,7 @@
               <span>Passer la commande</span>
               <Icon icon="solar:alt-arrow-right-linear" class="w-5 h-5" />
             </button>
-            <p class="text-center text-[10px] text-gray-400">Paiement Mobile Money, Celtis Cash, UBA Bank</p>
+            <p class="text-center text-[10px] text-gray-400">Paiement Mobile Money MTN, Celtis Cash, Virement UBA Bank</p>
           </div>
         </div>
       </div>
@@ -114,7 +114,9 @@ const emit = defineEmits(['close']);
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
-// On n'a plus besoin d'isPaymentModalOpen ici car il est géré par le Header via emit
+
+// Guard contre les doubles soumissions
+const isSubmitting = ref(false);
 
 const openPaymentModal = async () => {
   if (cartStore.items.length === 0) {
@@ -150,9 +152,13 @@ const openPaymentModal = async () => {
     return;
   }
 
-  emit('close'); // Close the drawer
+  // Éviter les doubles soumissions
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+
+  emit('close');
   
-  // Créer la commande d'abord
+  // Créer la commande
   Swal.fire({
     title: 'Traitement...',
     text: 'Création de votre commande',
@@ -163,9 +169,15 @@ const openPaymentModal = async () => {
   });
 
   try {
+    // shipping_address ne doit jamais être vide — le backend renvoie 400 sinon
+    const shippingAddress =
+      (authStore.user?.address && authStore.user.address.trim()) ||
+      (authStore.user?.city && authStore.user.city.trim()) ||
+      'Cotonou, Bénin';
+
     const orderData = {
-      shipping_address: authStore.user?.address || 'Adresse par défaut', // À améliorer plus tard avec un formulaire d'adresse
-      payment_method: 'mobile_money', // Par défaut
+      shipping_address: shippingAddress,
+      payment_method: 'mobile_money',
       customer_note: ''
     };
 
@@ -188,6 +200,8 @@ const openPaymentModal = async () => {
       icon: 'error',
       confirmButtonColor: '#9333ea'
     });
+  } finally {
+    isSubmitting.value = false;
   }
 };
 

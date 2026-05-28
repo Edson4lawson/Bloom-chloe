@@ -5,7 +5,7 @@
  * 
  * @endpoint POST /api/auth/refresh.php
  * @body { "refresh_token": "string" }
- * @returns { "access_token": "string", "refresh_token": "string", "expires_in": int }
+ * @return { "access_token": "string", "refresh_token": "string", "expires_in": int }
  */
 
 require_once __DIR__ . '/../config/headers.php';
@@ -101,6 +101,7 @@ try {
         $pdo->rollBack();
     }
     error_log('BLOOM ERROR [Refresh]: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    sendJsonResponse(['error' => 'Erreur lors du rafraîchissement du token', 'details' => $e->getMessage()], 500);
+    error_log('BLOOM ERROR [Refresh]: ' . $e->getMessage());
+    sendJsonResponse(['error' => 'Erreur lors du rafraîchissement de la session.'], 500);
 }
 ?>

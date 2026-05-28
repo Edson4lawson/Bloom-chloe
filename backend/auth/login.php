@@ -4,7 +4,7 @@
  * 
  * @endpoint POST /api/auth/login.php
  * @body { "email": "string", "password": "string" }
- * @returns { "access_token": "string", "refresh_token": "string", "expires_in": int, "user": object }
+ * @return { "access_token": "string", "refresh_token": "string", "expires_in": int, "user": object }
  */
 
 require_once __DIR__ . '/../config/headers.php';
@@ -112,13 +112,13 @@ try {
         $pdo->rollBack();
     }
     error_log('Erreur lors de la connexion: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la connexion'], 500);
+    sendJsonResponse(['error' => 'Une erreur est survenue lors de l\'authentification. Veuillez réessayer.'], 500);
 }
 
 /**
  * Log une tentative de connexion
  */
-function logLoginAttempt($pdo, $userId, $email, $ipAddress, $userAgent, $status, $reason) {
+function logLoginAttempt(PDO $pdo, ?int $userId, string $email, string $ipAddress, string $userAgent, string $status, ?string $reason): void {
     try {
         $stmt = $pdo->prepare('
             INSERT INTO login_logs (user_id, email, ip_address, user_agent, status, failure_reason, created_at) 

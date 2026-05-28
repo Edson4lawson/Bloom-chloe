@@ -56,8 +56,14 @@
           <Icon icon="solar:box-minimalistic-linear" class="w-12 h-12 text-slate-200" />
         </div>
         <h3 class="text-xl font-bold text-slate-900 mb-2">Aucun produit trouvé</h3>
-        <p class="text-slate-400">Essayez de changer de catégorie ou de filtre.</p>
-        <button @click="selectedCategory = 'all'" class="mt-6 text-purple-600 font-bold uppercase tracking-widest text-xs underline">Voir tout</button>
+        <p class="text-slate-500 max-w-md mx-auto">Essayez de changer de catégorie ou de filtre. Si le problème persiste, vérifiez votre connexion ou rechargez la page.</p>
+        <div class="mt-8 flex items-center justify-center gap-4">
+          <button @click="selectedCategory = 'all'" class="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-purple-600 transition-all">Voir tout</button>
+          <button @click="window.location.reload()" class="px-6 py-3 bg-white border border-slate-100 text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all flex items-center gap-2">
+            <Icon icon="solar:restart-linear" class="w-4 h-4" />
+            Recharger
+          </button>
+        </div>
       </div>
 
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">

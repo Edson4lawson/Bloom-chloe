@@ -202,7 +202,7 @@ const chartOptions = {
 const loadAnalytics = async () => {
   try {
     // Load main stats
-    const statsRes = await adminService.getStats()
+    const statsRes = await adminService.getStats(period.value)
     if (statsRes.success) {
       const s = statsRes.stats
       analyticsData.value = s

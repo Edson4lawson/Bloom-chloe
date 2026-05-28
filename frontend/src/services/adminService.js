@@ -5,8 +5,8 @@ export const adminService = {
   // DASHBOARD & ANALYTICS
   // ═══════════════════════════════════════════
   
-  async getStats() {
-    const response = await api.get(`/admin/analytics/summary.php?t=${Date.now()}`)
+  async getStats(period = '6m') {
+    const response = await api.get(`/admin/analytics/summary.php?period=${period}&t=${Date.now()}`)
     return {
       success: true,
       stats: {

@@ -18,23 +18,23 @@
 
           <!-- Content -->
           <div class="flex-1 text-center md:text-left">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">Nous utilisons des cookies ðŸª</h3>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Nous utilisons des cookies 🍪</h3>
             <p class="text-sm text-gray-600 leading-relaxed">
-              Nous utilisons des cookies pour améliorer votre expérience sur Bloom by Chloe. 
-              En continuant, vous acceptez notre 
+              Nous utilisons des cookies pour améliorer votre expérience sur Bloom by Chloe.
+              En continuant, vous acceptez notre
               <router-link to="/privacy" class="text-purple-600 font-medium hover:underline">politique de confidentialité</router-link>.
             </p>
           </div>
 
           <!-- Buttons -->
           <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto min-w-[300px]">
-            <button 
+            <button
               @click="decline"
               class="px-6 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
               Refuser
             </button>
-            <button 
+            <button
               @click="accept"
               class="flex-1 px-6 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
@@ -77,6 +77,3 @@ onMounted(() => {
   checkConsent()
 })
 </script>
-
-
-

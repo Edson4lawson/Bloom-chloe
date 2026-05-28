@@ -9,8 +9,12 @@
 // =============================================================================
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-header("Access-Control-Allow-Origin: $origin");
-header('Access-Control-Allow-Credentials: true');
+if ($origin !== '*') {
+    header("Access-Control-Allow-Origin: $origin");
+    header('Access-Control-Allow-Credentials: true');
+} else {
+    header("Access-Control-Allow-Origin: *");
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Max-Age: 86400');
@@ -23,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Fonction pour envoyer une réponse JSON
-function sendJsonResponse($data, $statusCode = 200) {
+function sendJsonResponse(mixed $data, int $statusCode = 200): void {
     http_response_code($statusCode);
     echo json_encode($data, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
     exit();
@@ -46,4 +50,3 @@ function getJsonData() {
     
     return is_array($data) ? $data : [];
 }
-?>

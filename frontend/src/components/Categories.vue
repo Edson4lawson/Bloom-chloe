@@ -12,6 +12,15 @@
             <div v-if="loading" class="flex justify-center py-20">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-100 border-t-purple-600"></div>
             </div>
+            <!-- Empty/Error State -->
+            <div v-else-if="products.length === 0" class="py-12 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <Icon icon="solar:fire-minimalistic-linear" class="w-8 h-8 text-slate-300" />
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Aucune tendance trouvée</h3>
+                <p class="text-slate-500 text-sm mb-4">Rechargez la page pour mettre à jour les tendances.</p>
+                <button @click="fetchTrends" class="text-purple-600 font-black uppercase tracking-widest text-[10px] hover:underline">Rafraîchir</button>
+            </div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <div v-for="(product, index) in products" :key="product.id"
                     :data-aos="'fade-up'" :data-aos-delay="100 * index"
@@ -45,6 +54,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Icon } from '@iconify/vue'
 import OptimizedImage from './OptimizedImage.vue'
 import { adminService } from '@/services/adminService'
 import { getProductImageUrl } from '@/utils/imageHelper'
@@ -52,7 +62,8 @@ import { getProductImageUrl } from '@/utils/imageHelper'
 const products = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
+const fetchTrends = async () => {
+    loading.value = true
     try {
         const res = await adminService.getProducts({ source: 'tendance' })
         if (res.success) {
@@ -63,6 +74,10 @@ onMounted(async () => {
     } finally {
         loading.value = false
     }
+}
+
+onMounted(() => {
+    fetchTrends()
 })
 </script>
 

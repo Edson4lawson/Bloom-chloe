@@ -16,4 +16,8 @@ export default defineConfig({
   },
   root: './',
   base: './',
+  server: {
+    host: '0.0.0.0', // accessible depuis le réseau local (téléphone)
+    port: 5173,
+  },
 })

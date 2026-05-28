@@ -65,18 +65,41 @@ try {
     ");
     $stats['recent_products'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Monthly Sales (for chart - last 6 months)
-    $stmt = $pdo->query("
-        SELECT DATE_FORMAT(created_at, '%b') as month, SUM(total_amount) as total
-        FROM orders
-        WHERE status != 'cancelled' AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-        GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b')
-        ORDER BY YEAR(created_at), MONTH(created_at)
-    ");
-    $monthlySales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Dynamic Sales Chart
+    $period = $_GET['period'] ?? '6m';
+    
+    if ($period === '7d' || $period === '30d') {
+        $interval = $period === '7d' ? '7 DAY' : '30 DAY';
+        $stmt = $pdo->query("
+            SELECT DATE_FORMAT(created_at, '%d %b') as month, SUM(total_amount) as total
+            FROM orders
+            WHERE status != 'cancelled' AND created_at >= DATE_SUB(CURDATE(), INTERVAL $interval)
+            GROUP BY DATE(created_at), DATE_FORMAT(created_at, '%d %b')
+            ORDER BY DATE(created_at)
+        ");
+    } else if ($period === '90d') {
+        $stmt = $pdo->query("
+            SELECT min(DATE_FORMAT(created_at, '%d %b')) as month, SUM(total_amount) as total
+            FROM orders
+            WHERE status != 'cancelled' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+            GROUP BY YEAR(created_at), WEEK(created_at)
+            ORDER BY YEAR(created_at), WEEK(created_at)
+        ");
+    } else { // 1y or 6m
+        $interval = $period === '1y' ? '1 YEAR' : '6 MONTH';
+        $stmt = $pdo->query("
+            SELECT DATE_FORMAT(created_at, '%b %Y') as month, SUM(total_amount) as total
+            FROM orders
+            WHERE status != 'cancelled' AND created_at >= DATE_SUB(CURDATE(), INTERVAL $interval)
+            GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b %Y')
+            ORDER BY YEAR(created_at), MONTH(created_at)
+        ");
+    }
+
+    $salesData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $stats['monthly_sales'] = array_map(function($row) {
         return ['month' => $row['month'], 'revenue' => (float)$row['total']];
-    }, $monthlySales);
+    }, $salesData);
 
     sendJsonResponse($stats);
 

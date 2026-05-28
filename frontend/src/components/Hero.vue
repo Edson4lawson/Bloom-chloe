@@ -68,7 +68,7 @@
                 </div>
                 <div>
                   <p class="text-xs text-gray-500 font-bold">Produit Phare</p>
-                  <p class="text-sm font-black text-gray-800">Best Seller 2025</p>
+                  <p class="text-sm font-black text-gray-800">Best Seller 2026</p>
                 </div>
               </div>
             </div>

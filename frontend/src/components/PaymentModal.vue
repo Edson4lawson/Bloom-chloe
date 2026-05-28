@@ -23,8 +23,8 @@
                 </svg>
               </div>
               <div>
-                <h4 class="font-semibold text-gray-800">Mobile Money Bénin</h4>
-                <p class="text-sm text-gray-500">MTN, Moov, Orange</p>
+                <h4 class="font-semibold text-gray-800">MTN Mobile Money</h4>
+                <p class="text-sm text-gray-500">Paiement Mobile MTN</p>
               </div>
             </div>
             <div class="w-6 h-6 rounded-full border-2 border-gray-300" 
@@ -48,8 +48,8 @@
                 <Icon icon="mdi:cash" class="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h4 class="font-semibold text-gray-800">Celtis Cash Bénin</h4>
-                <p class="text-sm text-gray-500">Portefeuille numérique</p>
+                <h4 class="font-semibold text-gray-800">Celtis Cash (Celtis)</h4>
+                <p class="text-sm text-gray-500">Portefeuille mobile</p>
               </div>
             </div>
             <div class="w-6 h-6 rounded-full border-2 border-gray-300" 
@@ -73,8 +73,8 @@
                 <Icon icon="mdi:bank" class="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h4 class="font-semibold text-gray-800">UBA Bank</h4>
-                <p class="text-sm text-gray-500">Virement bancaire</p>
+                <h4 class="font-semibold text-gray-800">Virement Bancaire (UBA)</h4>
+                <p class="text-sm text-gray-500">Compte UBA Bank</p>
               </div>
             </div>
             <div class="w-6 h-6 rounded-full border-2 border-gray-300" 

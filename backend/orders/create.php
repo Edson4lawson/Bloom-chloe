@@ -116,8 +116,8 @@ try {
         ]);
         
         // Mettre à jour le stock
-        $updateStockStmt = $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity - ?, stock = stock - ? WHERE id = ?');
-        $updateStockStmt->execute([$item['quantity'], $item['quantity'], $item['product_id']]);
+        $updateStockStmt = $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?');
+        $updateStockStmt->execute([$item['quantity'], $item['product_id']]);
     }
     
     // 5. Vider le panier
@@ -158,13 +158,14 @@ try {
         $pdo->rollBack();
     }
     error_log('Erreur lors de la création de la commande: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la création de la commande: ' . $e->getMessage()], 500);
+    error_log('Erreur lors de la création de la commande: ' . $e->getMessage());
+    sendJsonResponse(['error' => 'Erreur lors de la création de la commande. Veuillez vérifier vos informations.'], 500);
 }
 
 /**
  * Calcule les frais de livraison en fonction du montant et de l'adresse
  */
-function calculateShippingFee($subtotal, $shippingAddress) {
+function calculateShippingFee(float $subtotal, string $shippingAddress): int {
     // 2000 Fcfa par défaut au Bénin si moins de 50000 Fcfa
     if ($subtotal >= 50000) {
         return 0;
