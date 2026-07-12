@@ -1,0 +1,51 @@
+services:
+  # Backend PHP API
+  - type: web
+    name: bloom-chloe-api
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bloom-chloe-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: PAYMENT_SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://bloom-chloe.vercel.app
+      - key: API_URL
+        value: https://bloom-chloe-api.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://bloom-chloe.vercel.app,https://www.bloom-chloe.com,https://bloom-chloe.com
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
+    healthCheckPath: /
+    autoDeploy: false
+
+databases:
+  - name: bloom-chloe-db
+    databaseName: bloom_chloe
+    user: bloom_chloe_user
+    plan: free

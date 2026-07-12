@@ -1,14 +1,14 @@
 <?php
 /**
- * Middleware de Rate Limiting pour Bloom-Chloe
+ * Middleware de Rate Limiting Avancé pour Bloom-Chloe
  * Protège contre les attaques brute-force et DDoS applicatif
  * 
  * @author Security Audit
- * @version 1.0.0
+ * @version 2.0.0 - Production Ready
  */
 
 /**
- * Applique une limite de requêtes par IP et endpoint
+ * Applique une limite de requêtes par IP et endpoint avec protection avancée
  * 
  * @param string $endpoint Identifiant de l'endpoint
  * @param int $maxAttempts Nombre maximum de tentatives
@@ -16,6 +16,7 @@
  */
 function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
     $ip = getClientIP();
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
     $key = "rate_limit:{$endpoint}:{$ip}";
     
     // Répertoire pour stocker les données de rate limiting
@@ -27,9 +28,31 @@ function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
     $file = $rateLimitDir . '/' . md5($key) . '.json';
     
     // Charger les données existantes
-    $data = ['attempts' => 0, 'reset' => time() + $windowSeconds, 'blocked_until' => 0];
+    $data = [
+        'attempts' => 0,
+        'reset' => time() + $windowSeconds,
+        'blocked_until' => 0,
+        'first_attempt' => time(),
+        'user_agent_hash' => md5($userAgent)
+    ];
+    
     if (file_exists($file)) {
-        $data = json_decode(file_get_contents($file), true) ?: $data;
+        $existingData = json_decode(file_get_contents($file), true);
+        if ($existingData) {
+            $data = array_merge($data, $existingData);
+        }
+    }
+    
+    // Détection de changement d'user-agent (possible attaque)
+    if (isset($data['user_agent_hash']) && $data['user_agent_hash'] !== md5($userAgent)) {
+        logSuspiciousActivity($ip, $endpoint, 'user_agent_changed');
+        // Bloquer immédiatement si l'user-agent change
+        $data['blocked_until'] = time() + 3600; // 1 heure
+        file_put_contents($file, json_encode($data), LOCK_EX);
+        
+        http_response_code(403);
+        echo json_encode(['error' => 'Accès refusé pour raisons de sécurité']);
+        exit();
     }
     
     // Vérifier si bloqué
@@ -37,7 +60,7 @@ function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
         $retryAfter = $data['blocked_until'] - time();
         header("Retry-After: $retryAfter");
         header('X-RateLimit-Limit: ' . $maxAttempts);
-        header('X-RateLimit-Remaining: 0');
+        header('X-RateLimit-Remaining: 0);
         header('X-RateLimit-Reset: ' . $data['blocked_until']);
         
         http_response_code(429);
@@ -50,20 +73,27 @@ function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
     
     // Réinitialiser si la fenêtre est expirée
     if (time() > $data['reset']) {
-        $data = ['attempts' => 0, 'reset' => time() + $windowSeconds, 'blocked_until' => 0];
+        $data = [
+            'attempts' => 0,
+            'reset' => time() + $windowSeconds,
+            'blocked_until' => 0,
+            'first_attempt' => time(),
+            'user_agent_hash' => md5($userAgent)
+        ];
     }
     
     // Vérifier la limite
     if ($data['attempts'] >= $maxAttempts) {
-        // Bloquer pour une durée progressive
-        $blockDuration = min($windowSeconds * pow(2, floor($data['attempts'] / $maxAttempts)), 3600);
+        // Bloquer pour une durée progressive avec backoff exponentiel
+        $exponent = floor(log($data['attempts'] / $maxAttempts + 1, 2));
+        $blockDuration = min($windowSeconds * pow(2, $exponent), 7200); // Max 2 heures
         $data['blocked_until'] = time() + $blockDuration;
         file_put_contents($file, json_encode($data), LOCK_EX);
         
         $retryAfter = $blockDuration;
         header("Retry-After: $retryAfter");
         header('X-RateLimit-Limit: ' . $maxAttempts);
-        header('X-RateLimit-Remaining: 0');
+        header('X-RateLimit-Remaining: 0);
         header('X-RateLimit-Reset: ' . $data['blocked_until']);
         
         // Logger la tentative suspecte

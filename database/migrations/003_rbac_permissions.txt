@@ -1,0 +1,157 @@
+-- =============================================================================
+-- MIGRATION: TABLES POUR RBAC (Role-Based Access Control)
+-- Bloom Chloé - Sécurité
+-- =============================================================================
+
+-- Table des rôles
+CREATE TABLE IF NOT EXISTS roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    level INT DEFAULT 0, -- Niveau de privilège (plus élevé = plus de droits)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_level (level)
+) ENGINE=InnoDB;
+
+-- Table des permissions
+CREATE TABLE IF NOT EXISTS permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    module VARCHAR(50) NOT NULL, -- module: products, orders, users, etc.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_name (name),
+    INDEX idx_module (module)
+) ENGINE=InnoDB;
+
+-- Table de liaison rôle-permission
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_role_permission (role_id, permission_id),
+    INDEX idx_role_id (role_id),
+    INDEX idx_permission_id (permission_id)
+) ENGINE=InnoDB;
+
+-- Insérer les rôles par défaut
+INSERT INTO roles (name, description, level) VALUES
+('customer', 'Client standard', 1),
+('support', 'Support client', 2),
+('manager', 'Gestionnaire', 3),
+('admin', 'Administrateur', 4),
+('super_admin', 'Super Administrateur', 5)
+ON DUPLICATE KEY UPDATE name=name;
+
+-- Insérer les permissions par défaut
+INSERT INTO permissions (name, description, module) VALUES
+-- Produits
+('products.view', 'Voir les produits', 'products'),
+('products.create', 'Créer des produits', 'products'),
+('products.update', 'Modifier les produits', 'products'),
+('products.delete', 'Supprimer les produits', 'products'),
+-- Commandes
+('orders.view', 'Voir les commandes', 'orders'),
+('orders.view_all', 'Voir toutes les commandes', 'orders'),
+('orders.update_status', 'Modifier le statut des commandes', 'orders'),
+('orders.refund', 'Rembourser les commandes', 'orders'),
+-- Utilisateurs
+('users.view', 'Voir les utilisateurs', 'users'),
+('users.create', 'Créer des utilisateurs', 'users'),
+('users.update', 'Modifier les utilisateurs', 'users'),
+('users.delete', 'Supprimer les utilisateurs', 'users'),
+('users.manage_roles', 'Gérer les rôles utilisateurs', 'users'),
+-- Catégories
+('categories.view', 'Voir les catégories', 'categories'),
+('categories.create', 'Créer des catégories', 'categories'),
+('categories.update', 'Modifier les catégories', 'categories'),
+('categories.delete', 'Supprimer les catégories', 'categories'),
+-- Rapports
+('reports.view', 'Voir les rapports', 'reports'),
+('reports.export', 'Exporter les rapports', 'reports'),
+-- Système
+('system.settings', 'Modifier les paramètres système', 'system'),
+('system.logs', 'Voir les logs système', 'system'),
+('system.backup', 'Gérer les sauvegardes', 'system')
+ON DUPLICATE KEY UPDATE name=name;
+
+-- Assigner les permissions aux rôles
+-- Customer
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'customer' AND p.name IN ('products.view', 'orders.view')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- Support
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'support' AND p.name IN (
+    'products.view', 'orders.view', 'orders.view_all', 'orders.update_status'
+)
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- Manager
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'manager' AND p.name IN (
+    'products.view', 'products.create', 'products.update',
+    'orders.view', 'orders.view_all', 'orders.update_status', 'orders.refund',
+    'categories.view', 'categories.create', 'categories.update',
+    'reports.view', 'reports.export'
+)
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- Admin
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'admin' AND p.name NOT IN ('system.backup')
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- Super Admin (toutes les permissions)
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'super_admin'
+ON DUPLICATE KEY UPDATE role_id=role_id;
+
+-- Mettre à jour la table users pour utiliser le nouveau système (si la colonne n'existe pas)
+SET @col_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'users' 
+    AND COLUMN_NAME = 'role_id'
+);
+
+SET @sql = IF(@col_exists = 0, 
+    'ALTER TABLE users ADD COLUMN role_id INT NULL AFTER role',
+    'SELECT "Column role_id already exists" AS message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Ajouter la foreign key si elle n'existe pas
+SET @fk_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'users' 
+    AND CONSTRAINT_NAME = 'users_ibfk_1'
+);
+
+SET @sql = IF(@fk_exists = 0, 
+    'ALTER TABLE users ADD FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL',
+    'SELECT "Foreign key already exists" AS message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Migrer les rôles existants
+UPDATE users SET role_id = (SELECT id FROM roles WHERE name = role) WHERE role_id IS NULL;

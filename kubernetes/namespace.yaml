@@ -1,0 +1,11 @@
+# =============================================================================
+# BLOOM-CHLOE - Kubernetes Namespace
+# =============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bloom-chloe
+  labels:
+    name: bloom-chloe
+    environment: production

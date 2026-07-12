@@ -38,19 +38,44 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     sendJsonResponse(['error' => 'Format d\'email invalide'], 400);
 }
 
-// ⚠️ SÉCURITÉ: Valider la force du mot de passe
+// ⚠️ SÉCURITÉ: Valider la force du mot de passe (Politique stricte OWASP)
 function validatePasswordStrength($password) {
-    if (strlen($password) < 8) {
-        return 'Le mot de passe doit contenir au moins 8 caractères';
+    // Minimum 12 caractères
+    if (strlen($password) < 12) {
+        return 'Le mot de passe doit contenir au moins 12 caractères';
     }
+    // Maximum 128 caractères
+    if (strlen($password) > 128) {
+        return 'Le mot de passe ne peut pas dépasser 128 caractères';
+    }
+    // Au moins une majuscule
     if (!preg_match('/[A-Z]/', $password)) {
         return 'Le mot de passe doit contenir au moins une majuscule';
     }
+    // Au moins une minuscule
     if (!preg_match('/[a-z]/', $password)) {
         return 'Le mot de passe doit contenir au moins une minuscule';
     }
+    // Au moins un chiffre
     if (!preg_match('/[0-9]/', $password)) {
         return 'Le mot de passe doit contenir au moins un chiffre';
+    }
+    // Au moins un caractère spécial
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        return 'Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*(),.?":{}|<>)';
+    }
+    // Interdire les mots de passe communs (liste simplifiée)
+    $commonPasswords = ['password', '123456', 'qwerty', 'admin', 'welcome', 'letmein'];
+    if (in_array(strtolower($password), $commonPasswords)) {
+        return 'Ce mot de passe est trop commun. Choisissez un mot de passe plus complexe.';
+    }
+    // Interdire les séquences
+    if (preg_match('/(012|123|234|345|456|567|678|789|890|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)/i', $password)) {
+        return 'Le mot de passe ne doit pas contenir de séquences consécutives.';
+    }
+    // Interdire les répétitions
+    if (preg_match('/(.)\1{2,}/', $password)) {
+        return 'Le mot de passe ne doit pas contenir de caractères répétés plus de 2 fois.';
     }
     return null;
 }
@@ -64,11 +89,16 @@ if ($passwordError) {
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
 $stmt->execute([$email]);
 if ($stmt->fetch()) {
-    sendJsonResponse(['error' => 'Cet email est déjà utilisé'], 409);
+    sendJsonResponse(['error' => 'Cette adresse email est déjà associée à un compte. Veuillez vous connecter ou utiliser une autre adresse email.'], 409);
 }
 
-// Hacher le mot de passe avec un algorithme sécurisé
-$hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]);
+// Hacher le mot de passe avec Argon2id (algorithme le plus sécurisé)
+// Argon2id est recommandé par OWASP et NIST pour le hash de mots de passe
+$hashedPassword = password_hash($data['password'], PASSWORD_ARGON2ID, [
+    'memory_cost' => 65536,      // 64 MB
+    'time_cost' => 4,            // 4 itérations
+    'threads' => 3               // 3 threads
+]);
 
 $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
@@ -153,7 +183,13 @@ try {
         $pdo->rollBack();
     }
     error_log('Erreur lors de l\'inscription: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de l\'inscription'], 500);
+    sendJsonResponse(['error' => 'Une erreur technique est survenue lors de la création de votre compte. Veuillez réessayer dans quelques instants. Si le problème persiste, contactez notre support.'], 500);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('Erreur générale lors de l\'inscription: ' . $e->getMessage());
+    sendJsonResponse(['error' => 'Une erreur inattendue est survenue lors de l\'inscription. Veuillez réessayer.'], 500);
 }
 
 /**

@@ -5,10 +5,33 @@ import axios from 'axios';
  * - Access Token: 15 minutes
  * - Refresh Token: 30 jours
  * - Renouvellement transparent des tokens expirés
+ * - Cache intelligent pour les requêtes GET
  */
 
 // URL de base de l'API - Configurée via les variables d'environnement
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'; 
+
+// Cache simple pour les requêtes GET
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Fonction de cache
+const getCacheKey = (config) => {
+    return `${config.method}:${config.url}:${JSON.stringify(config.params || {})}`;
+};
+
+const getFromCache = (key) => {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+    }
+    cache.delete(key);
+    return null;
+};
+
+const setCache = (key, data) => {
+    cache.set(key, { data, timestamp: Date.now() });
+};
 
 // Créer l'instance Axios
 const api = axios.create({
@@ -36,7 +59,7 @@ const processQueue = (error, token = null) => {
 };
 
 /**
- * Intercepteur de requête: Ajoute le token d'authentification
+ * Intercepteur de requête: Ajoute le token d'authentification et utilise le cache
  */
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
@@ -47,14 +70,38 @@ api.interceptors.request.use((config) => {
         config.params = { ...(config.params || {}), token: token };
       }
     }
+    
+    // Utiliser le cache pour les requêtes GET
+    if (config.method?.toLowerCase() === 'get') {
+        const cacheKey = getCacheKey(config);
+        const cachedData = getFromCache(cacheKey);
+        if (cachedData) {
+            config.adapter = () => Promise.resolve({
+                data: cachedData,
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config,
+                cached: true
+            });
+        }
+    }
+    
     return config;
 });
 
 /**
- * Intercepteur de réponse: Gère le renouvellement automatique des tokens
+ * Intercepteur de réponse: Gère le renouvellement automatique des tokens et le cache
  */
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Stocker dans le cache pour les requêtes GET réussies
+        if (response.config.method?.toLowerCase() === 'get' && response.status === 200) {
+            const cacheKey = getCacheKey(response.config);
+            setCache(cacheKey, response.data);
+        }
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
         

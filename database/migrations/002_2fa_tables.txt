@@ -1,0 +1,68 @@
+-- =============================================================================
+-- MIGRATION: TABLES POUR 2FA (Two-Factor Authentication)
+-- Bloom Chloé - Sécurité
+-- =============================================================================
+
+-- Table pour stocker les secrets 2FA des utilisateurs
+CREATE TABLE IF NOT EXISTS two_factor_auth (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    secret VARCHAR(255) NOT NULL,
+    enabled TINYINT(1) DEFAULT 0,
+    backup_codes JSON DEFAULT NULL,
+    last_used_at DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_enabled (enabled)
+) ENGINE=InnoDB;
+
+-- Table pour les sessions 2FA temporaires (pendant la configuration)
+CREATE TABLE IF NOT EXISTS two_factor_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    verified TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_session_token (session_token),
+    INDEX idx_expires (expires_at)
+) ENGINE=InnoDB;
+
+-- Table pour les appareils de confiance (remember me)
+CREATE TABLE IF NOT EXISTS trusted_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    device_identifier VARCHAR(255) NOT NULL,
+    user_agent VARCHAR(255),
+    ip_address VARCHAR(45),
+    last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_device (user_id, device_identifier),
+    INDEX idx_expires (expires_at)
+) ENGINE=InnoDB;
+
+-- Ajouter une colonne pour forcer le 2FA sur les admins (si elle n'existe pas)
+SET @col_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+    AND TABLE_NAME = 'users' 
+    AND COLUMN_NAME = 'two_factor_required'
+);
+
+SET @sql = IF(@col_exists = 0, 
+    'ALTER TABLE users ADD COLUMN two_factor_required TINYINT(1) DEFAULT 0 AFTER role',
+    'SELECT "Column two_factor_required already exists" AS message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Mettre à jour les admins pour forcer le 2FA
+UPDATE users SET two_factor_required = 1 WHERE role = 'admin';

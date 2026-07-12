@@ -1,0 +1,136 @@
+# =============================================================================
+# BLOOM-CHLOE - Kubernetes Deployment pour Backend
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bloom-chloe-backend
+  namespace: bloom-chloe
+  labels:
+    app: bloom-chloe-backend
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: bloom-chloe-backend
+  template:
+    metadata:
+      labels:
+        app: bloom-chloe-backend
+        version: v1
+    spec:
+      containers:
+      - name: backend
+        image: bloom-chloe/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9000
+          name: php-fpm
+          protocol: TCP
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: APP_DEBUG
+          value: "false"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: db-port
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: db-name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: db-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: jwt-secret
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: stripe-secret-key
+        - name: STRIPE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: bloom-chloe-secrets
+              key: stripe-webhook-secret
+        - name: FRONTEND_URL
+          value: "https://bloom-chloe.com"
+        - name: ALLOWED_ORIGINS
+          value: "https://bloom-chloe.com,https://www.bloom-chloe.com"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health.php
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health.php
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /var/www/backend/logs
+        - name: rate-limit
+          mountPath: /tmp/bloom_rate_limit
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: rate-limit
+        emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bloom-chloe-backend-service
+  namespace: bloom-chloe
+  labels:
+    app: bloom-chloe-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: php-fpm
+  selector:
+    app: bloom-chloe-backend

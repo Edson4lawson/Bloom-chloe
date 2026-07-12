@@ -1,0 +1,54 @@
+# =============================================================================
+# BLOOM-CHLOE - Kubernetes Ingress
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bloom-chloe-ingress
+  namespace: bloom-chloe
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-connections: "100"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-burst: "100"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "DENY" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+spec:
+  tls:
+  - hosts:
+    - bloom-chloe.com
+    - www.bloom-chloe.com
+    secretName: bloom-chloe-tls
+  rules:
+  # Backend API
+  - host: api.bloom-chloe.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bloom-chloe-nginx-service
+            port:
+              number: 80
+  # Frontend (Vercel gère cela, mais pour référence)
+  - host: bloom-chloe.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: bloom-chloe-nginx-service
+            port:
+              number: 80

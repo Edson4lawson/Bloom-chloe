@@ -1,0 +1,11 @@
+# =============================================================================
+# CONFIGURATION APACHE - DOSSIER API
+# =============================================================================
+
+# Activer le rewriting
+RewriteEngine On
+
+# Rediriger les requêtes sans .php vers les fichiers PHP
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ $1.php [L,QSA]

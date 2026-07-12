@@ -201,6 +201,9 @@ import CartDrawer from './CartDrawer.vue';
 import WishlistDrawer from './WishlistDrawer.vue';
 import PaymentModal from './PaymentModal.vue';
 
+// Déclaration des événements émis
+const emit = defineEmits(['openStore', 'openAuth', 'openPayment']);
+
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const wishlistStore = useWishlistStore();

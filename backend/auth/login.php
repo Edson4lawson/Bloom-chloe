@@ -10,14 +10,16 @@
 require_once __DIR__ . '/../config/headers.php';
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/rate_limit.php';
+require_once __DIR__ . '/../middleware/two_factor.php';
+require_once __DIR__ . '/../middleware/captcha.php';
 
 // ⚠️ PROTECTION BRUTE-FORCE: Limite à 5 tentatives par 5 minutes
 loginRateLimit();
 
+// ⚠️ PROTECTION CAPTCHA: Vérifier si CAPTCHA requis après échecs
+requireCaptcha('login', 0.5);
+
 // Vérifier si la requête est de type POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendJsonResponse(['error' => 'Méthode non autorisée'], 405);
-}
 
 // Récupérer les données de la requête
 $data = getJsonData();
@@ -55,7 +57,71 @@ try {
         }
         
         logLoginAttempt($pdo, $user['id'] ?? null, $email, $ipAddress, $userAgent, 'failed', 'Invalid credentials');
-        sendJsonResponse(['error' => 'Email ou mot de passe incorrect'], 401);
+        
+        // Incrémenter le compteur CAPTCHA
+        incrementCaptchaFailure('login');
+        
+        // Message d'erreur clair
+        $errorMessage = 'Email ou mot de passe incorrect';
+        if ($user && $attempts >= 4) {
+            $errorMessage = 'Email ou mot de passe incorrect. Attention: après une tentative échouée, votre compte sera temporairement verrouillé.';
+        }
+        
+        sendJsonResponse([
+            'error' => $errorMessage,
+            'require_captcha' => requiresCaptcha('login')
+        ], 401);
+    }
+    
+    // ⚠️ SÉCURITÉ: Vérifier si le 2FA est requis pour cet utilisateur
+    $stmt = $pdo->prepare('SELECT enabled FROM two_factor_auth WHERE user_id = ?');
+    $stmt->execute([$user['id']]);
+    $twoFactor = $stmt->fetch();
+    
+    $requiresTwoFactor = false;
+    
+    // Les admins doivent toujours avoir le 2FA
+    if (in_array($user['role'], ['admin', 'super_admin'])) {
+        if (!$twoFactor || !$twoFactor['enabled']) {
+            logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'blocked', '2FA not enabled for admin');
+            sendJsonResponse([
+                'error' => '2FA obligatoire pour les administrateurs. Configurez-le d\'abord.',
+                'require_2fa_setup' => true
+            ], 403);
+        }
+        $requiresTwoFactor = true;
+    } elseif ($twoFactor && $twoFactor['enabled']) {
+        $requiresTwoFactor = true;
+    }
+    
+    // Si 2FA requis et code non fourni
+    if ($requiresTwoFactor && empty($data['two_factor_code'])) {
+        // Créer une session temporaire pour la vérification 2FA
+        $tempSessionToken = createTwoFactorSession($user['id']);
+        
+        sendJsonResponse([
+            'error' => 'Veuillez entrer le code de double authentification (2FA) généré par votre application d\'authentification.',
+            'require_2fa_verification' => true,
+            'temp_session_token' => $tempSessionToken
+        ], 403);
+    }
+    
+    // Si 2FA requis et code fourni, le vérifier
+    if ($requiresTwoFactor && !empty($data['two_factor_code'])) {
+        if (!validateTwoFactorCode($user['id'], $data['two_factor_code'])) {
+            logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'failed', 'Invalid 2FA code');
+            sendJsonResponse(['error' => 'Le code de double authentification est incorrect. Veuillez vérifier et réessayer.'], 401);
+        }
+        
+        // Marquer la session comme vérifiée si token fourni
+        if (!empty($data['temp_session_token'])) {
+            verifyTwoFactorSession($user['id'], $data['temp_session_token']);
+        }
+        
+        // Ajouter l'appareil comme de confiance si demandé
+        if (!empty($data['remember_device'])) {
+            addTrustedDevice($user['id'], true);
+        }
     }
     
     $pdo->beginTransaction();
@@ -86,6 +152,9 @@ try {
     // Logger la connexion réussie
     logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'success', null);
     
+    // Réinitialiser le compteur CAPTCHA
+    resetCaptchaFailure('login');
+    
     // Préparer les données utilisateur (sans informations sensibles)
     $userData = [
         'id' => $user['id'],
@@ -106,7 +175,13 @@ try {
         'expires_in' => 900, // 15 minutes en secondes
         'user' => $userData
     ]);
-    
+    tchnique ea connexion. Veuillez réessayer dans quelques instants. Si le problème persiste, contactez notre support.], 500);
+} cc (Excptio $e) {
+     ($pdo->nTransation()) {
+        $pdo->rollBck();
+    }
+    error_log('Erreur générale lors de la connexion: ' . $e->geMessage());
+    sendJsonResponse(['error' => 'Une erreur nattendue est surveue
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
@@ -122,13 +197,14 @@ function logLoginAttempt(PDO $pdo, ?int $userId, string $email, string $ipAddres
     try {
         $stmt = $pdo->prepare('
             INSERT INTO login_logs (user_id, email, ip_address, user_agent, status, failure_reason, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
+          VALUES (?, ?, ?, ?, ?, ?, NOW())
         ');
-        $stmt->execute([$userId, $email, $ipAddress, $userAgent, $status, $reason]);
-    } catch (PDOException $e) {
-        // Ne pas bloquer le login si le log échoue (table peut ne pas exister)
-        error_log('Failed to log login attempt: ' . $e->getMessage());
+   } catch (PDOException $e) {
+          error_log('Failed to log login attempt: ' . $e->getMessage());
     }
 }
 ?>
+
+?>
+
 
