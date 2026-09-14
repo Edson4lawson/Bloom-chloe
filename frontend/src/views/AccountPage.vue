@@ -1,13 +1,4 @@
 <template>
-<<<<<<< HEAD
-  <div class="min-h-screen bg-daba-cream-alt pt-32 pb-20">
-    <div class="container mx-auto px-4 md:px-6">
-      
-      <!-- Top Action: Back to Home -->
-      <div class="flex justify-end mb-8">
-        <router-link to="/" class="flex items-center gap-2 px-6 py-3 bg-daba-cream text-daba-orange font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-daba-cream-alt transition-all shadow-sm border border-daba-cream-alt">
-          <Icon icon="solar:home-bold-duotone" class="w-5 h-5" />
-=======
   <div class="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-50 pt-32 pb-20">
     <div class="container mx-auto px-4 md:px-6 max-w-7xl">
       
@@ -15,7 +6,6 @@
       <div class="flex justify-end mb-8">
         <router-link to="/" class="group flex items-center gap-2 px-6 py-3 bg-white text-purple-600 font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-sm border border-purple-100 hover:border-purple-600 hover:shadow-lg hover:shadow-purple-200/50">
           <Icon icon="solar:home-bold-duotone" class="w-5 h-5 transition-transform group-hover:-translate-x-1" />
->>>>>>> 93cd25b (feat(deploy): prepare production deployment on Render, Supabase and Vercel with cash and transfer payment flows)
           Retour à l'accueil
         </router-link>
       </div>
@@ -23,17 +13,6 @@
       <div class="flex flex-col lg:flex-row gap-8">
         
         <!-- Sidebar Navigation -->
-<<<<<<< HEAD
-        <aside class="w-full lg:w-80 shrink-0">
-          <div class="bg-daba-cream rounded-[2.5rem] shadow-xl shadow-daba-cream-alt/50 p-8 border border-daba-cream-alt">
-            <div class="flex items-center gap-4 mb-10">
-              <div class="w-16 h-16 rounded-full bg-daba-orange flex items-center justify-center text-white text-2xl font-black uppercase ring-4 ring-daba-cream-alt">
-                {{ user?.first_name?.charAt(0) || 'U' }}
-              </div>
-              <div>
-                <h2 class="text-xl font-black text-daba-navy truncate">{{ user?.first_name }} {{ user?.last_name }}</h2>
-                <p class="text-sm text-daba-slate-dark font-bold uppercase tracking-widest">{{ user?.role === 'admin' ? 'Administrateur' : 'Client Privilège' }}</p>
-=======
         <aside class="w-full lg:w-80 shrink-0" :class="sidebarVisible ? 'animate-slide-in-left' : ''">
           <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 border border-slate-100 sticky top-28">
             <!-- User Profile Card -->
@@ -49,19 +28,23 @@
                 <div class="flex items-center gap-2 mt-1">
                   <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest"
                     :class="user?.role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'">
-                    <Icon :icon="user?.role === 'admin' ? 'solar:crown-bold' : 'solar:star-bold'" class="w-3 h-3" />
-                    {{ user?.role === 'admin' ? 'Admin' : loyaltyTier }}
+                    <Icon :icon="user?.role === 'admin' ? 'solar:shield-star-bold' : 'solar:crown-bold'" class="w-3 h-3" />
+                    {{ user?.role === 'admin' ? 'Admin' : 'Client VIP' }}
                   </span>
+                  <span class="text-xs text-slate-400">•</span>
+                  <span class="text-xs font-bold text-slate-400">{{ loyaltyTier }}</span>
                 </div>
->>>>>>> 93cd25b (feat(deploy): prepare production deployment on Render, Supabase and Vercel with cash and transfer payment flows)
               </div>
             </div>
 
-            <!-- Loyalty Progress Bar -->
-            <div v-if="user?.role !== 'admin'" class="mb-8 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-100/50">
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-[9px] font-black text-purple-600 uppercase tracking-widest">Fidélité</span>
-                <span class="text-[9px] font-black text-purple-400 uppercase tracking-widest">{{ loyaltyPoints }} pts</span>
+            <!-- Loyalty Mini Card -->
+            <div class="mb-8 p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/80">
+              <div class="flex items-center justify-between text-xs font-black uppercase tracking-wider mb-2">
+                <span class="text-purple-900 flex items-center gap-1.5">
+                  <Icon icon="solar:star-bold-duotone" class="w-4 h-4 text-purple-600" />
+                  Points Fidélité
+                </span>
+                <span class="text-purple-600 font-black">{{ loyaltyPoints }} pts</span>
               </div>
               <div class="w-full h-2 bg-purple-200/50 rounded-full overflow-hidden">
                 <div class="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full transition-all duration-1000 ease-out" :style="{ width: loyaltyProgress + '%' }"></div>
@@ -74,14 +57,9 @@
                 v-for="(item, index) in menuItems" 
                 :key="item.id"
                 @click="activeTab = item.id"
-<<<<<<< HEAD
-                class="w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all font-black uppercase tracking-widest text-[10px]"
-                :class="activeTab === item.id ? 'bg-daba-navy text-white shadow-lg shadow-slate-900/20' : 'text-daba-slate-dark hover:bg-daba-cream-alt hover:text-daba-navy'">
-=======
                 class="w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px]"
                 :class="activeTab === item.id ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 scale-[1.02]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'"
                 :style="{ animationDelay: (index * 50) + 'ms' }">
->>>>>>> 93cd25b (feat(deploy): prepare production deployment on Render, Supabase and Vercel with cash and transfer payment flows)
                 <div class="flex items-center gap-3">
                   <Icon :icon="item.icon" class="w-5 h-5" />
                   {{ item.label }}
@@ -197,102 +175,9 @@
                       </button>
                     </div>
                   </div>
->>>>>>> 93cd25b (feat(deploy): prepare production deployment on Render, Supabase and Vercel with cash and transfer payment flows)
                 </div>
               </div>
 
-<<<<<<< HEAD
-            <!-- Orders Tab -->
-            <div v-if="activeTab === 'orders'" class="space-y-8">
-              <h1 class="text-3xl font-black text-daba-navy italic uppercase">Mes <span class="text-daba-orange">Commandes</span></h1>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead>
-                    <tr class="border-b border-daba-cream-alt">
-                      <th class="pb-4 text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">N°</th>
-                      <th class="pb-4 text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Date</th>
-                      <th class="pb-4 text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Statut</th>
-                      <th class="pb-4 text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Total</th>
-                      <th class="pb-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-daba-cream-alt">
-                    <tr v-for="order in orders" :key="order.id" class="group hover:bg-daba-cream-alt transition-colors">
-                      <td class="py-6 font-black text-daba-navy">#{{ order.id }}</td>
-                      <td class="py-6 text-sm text-daba-slate font-medium">{{ formatDate(order.created_at) }}</td>
-                      <td class="py-6">
-                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
-                          :class="getStatusClass(order.status)">
-                          {{ order.status }}
-                        </span>
-                      </td>
-                      <td class="py-6 font-black text-daba-navy">{{ order.total_amount.toLocaleString() }} FCFA</td>
-                      <td class="py-6 text-right">
-                        <button class="text-daba-orange hover:text-daba-navy font-black uppercase tracking-widest text-[10px]">Facture</button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Profile Tab -->
-            <div v-if="activeTab === 'profile'" class="space-y-10">
-              <h1 class="text-3xl font-black text-daba-navy italic uppercase">Mon <span class="text-daba-orange">Profil</span></h1>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-6">
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Prénom</label>
-                    <input type="text" v-model="userForm.first_name" class="w-full px-6 py-4 bg-daba-cream-alt border border-daba-cream-alt rounded-2xl focus:outline-none focus:ring-2 focus:ring-daba-cream-alt0/20 font-bold text-daba-navy">
-                  </div>
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Nom</label>
-                    <input type="text" v-model="userForm.last_name" class="w-full px-6 py-4 bg-daba-cream-alt border border-daba-cream-alt rounded-2xl focus:outline-none focus:ring-2 focus:ring-daba-cream-alt0/20 font-bold text-daba-navy">
-                  </div>
-                </div>
-                <div class="space-y-6">
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Email</label>
-                    <input type="email" :value="user?.email" disabled class="w-full px-6 py-4 bg-slate-100 border border-daba-cream-alt rounded-2xl focus:outline-none font-bold text-daba-slate-dark cursor-not-allowed">
-                  </div>
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Téléphone</label>
-                    <input type="text" v-model="userForm.phone" class="w-full px-6 py-4 bg-daba-cream-alt border border-daba-cream-alt rounded-2xl focus:outline-none focus:ring-2 focus:ring-daba-cream-alt0/20 font-bold text-daba-navy">
-                  </div>
-                </div>
-                <!-- Adresse Field -->
-                <div class="space-y-2 md:col-span-2">
-                  <label class="text-[10px] font-black text-daba-slate-dark uppercase tracking-widest">Adresse</label>
-                  <textarea v-model="userForm.address" rows="3" class="w-full px-6 py-4 bg-daba-cream-alt border border-daba-cream-alt rounded-2xl focus:outline-none focus:ring-2 focus:ring-daba-cream-alt0/20 font-bold text-daba-navy" placeholder="Votre adresse complète..."></textarea>
-                </div>
-              </div>
-              <div class="flex justify-end pt-6">
-                <button @click="updateProfile" class="px-10 py-5 bg-daba-navy text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-daba-orange transition-all shadow-xl shadow-slate-900/10">Sauvegarder les modifications</button>
-              </div>
-            </div>
-
-            <!-- Addresses Tab -->
-            <div v-if="activeTab === 'addresses'" class="space-y-10">
-              <div class="flex items-center justify-between">
-                <h1 class="text-3xl font-black text-daba-navy italic uppercase">Mes <span class="text-daba-orange">Adresses</span></h1>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div v-if="user?.address" class="p-8 border border-daba-cream-alt bg-daba-cream-alt rounded-[2rem] relative group w-full">
-                  <div class="flex items-center gap-3 mb-4">
-                    <Icon icon="solar:home-bold-duotone" class="w-6 h-6 text-daba-orange" />
-                    <h4 class="font-black text-daba-navy uppercase text-xs tracking-widest">Adresse Enregistrée</h4>
-                  </div>
-                  <p class="text-daba-slate font-bold leading-relaxed whitespace-pre-line">{{ user.address }}</p>
-                  <div class="mt-6 flex gap-4">
-                    <button @click="activeTab = 'profile'" class="text-[10px] font-black text-daba-orange uppercase tracking-widest underline">Modifier dans mon profil</button>
-                  </div>
-                </div>
-                <div v-else class="p-8 border border-daba-cream-alt bg-daba-cream-alt rounded-[2rem] text-center w-full md:col-span-2">
-                  <Icon icon="solar:map-point-bold-duotone" class="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p class="text-daba-slate-dark font-bold mb-4">Aucune adresse enregistrée pour le moment.</p>
-                  <button @click="activeTab = 'profile'" class="px-6 py-3 bg-daba-orange text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-daba-orange-dark transition-all">
-                    Ajouter une adresse
-=======
               <!-- ===== Orders Tab ===== -->
               <div v-if="activeTab === 'orders'" class="space-y-8">
                 <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -307,60 +192,52 @@
                   </div>
                 </div>
 
-                <!-- Loading Skeleton -->
                 <div v-if="loadingOrders" class="space-y-4">
-                  <div v-for="n in 4" :key="n" class="p-6 bg-slate-50 rounded-2xl animate-pulse">
-                    <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 bg-slate-200 rounded-xl"></div>
-                      <div class="flex-1 space-y-2">
-                        <div class="h-3 bg-slate-200 rounded w-48"></div>
-                        <div class="h-2 bg-slate-200 rounded w-32"></div>
-                      </div>
-                    </div>
-                  </div>
+                  <div v-for="n in 4" :key="n" class="p-6 bg-slate-50 rounded-2xl animate-pulse h-24"></div>
                 </div>
 
-                <!-- Empty State -->
-                <div v-else-if="filteredOrders.length === 0" class="text-center py-16 bg-gradient-to-br from-slate-50 to-purple-50/30 rounded-[2rem]">
-                  <Icon icon="solar:bag-bold-duotone" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                  <p class="text-slate-400 font-bold">{{ orderFilter === 'all' ? 'Aucune commande pour le moment' : 'Aucune commande avec ce statut' }}</p>
+                <div v-else-if="filteredOrders.length === 0" class="text-center py-16 bg-slate-50 rounded-[2rem]">
+                  <Icon icon="solar:box-minimalistic-linear" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p class="text-slate-400 font-bold">Aucune commande trouvée.</p>
                 </div>
 
-                <!-- Orders Cards -->
-                <div v-else class="space-y-4">
-                  <div v-for="(order, i) in filteredOrders" :key="order.id" 
-                    class="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:shadow-lg transition-all duration-300"
-                    :style="{ animationDelay: (i * 80) + 'ms' }">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div v-else class="space-y-6">
+                  <div v-for="order in filteredOrders" :key="order.id" 
+                    class="p-6 md:p-8 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-purple-200 transition-all duration-300 space-y-6">
+                    
+                    <!-- Order Header -->
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b border-slate-200/60">
                       <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center font-black text-lg text-slate-900 shadow-sm border border-slate-100">
+                        <div class="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center font-black">
                           #{{ order.id }}
                         </div>
                         <div>
-                          <p class="font-black text-slate-900 uppercase text-sm">{{ formatDate(order.created_at) }}</p>
-                          <p class="text-slate-400 font-bold text-xs mt-1">{{ formatAmount(order.total_amount) }} FCFA</p>
+                          <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Passée le {{ formatDate(order.created_at) }}</p>
+                          <p class="text-lg font-black text-slate-900 mt-0.5">{{ formatAmount(order.total_amount) }} FCFA</p>
                         </div>
                       </div>
                       <div class="flex items-center gap-3">
-                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest" :class="getStatusClass(order.status)">
+                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest" :class="getStatusClass(order.status)">
                           {{ getStatusLabel(order.status) }}
                         </span>
                       </div>
                     </div>
 
                     <!-- Order Timeline -->
-                    <div class="mt-6 pt-6 border-t border-slate-200/50">
-                      <div class="flex items-center justify-between relative">
-                        <div class="absolute top-4 left-0 right-0 h-0.5 bg-slate-200"></div>
-                        <div class="absolute top-4 left-0 h-0.5 bg-purple-600 transition-all duration-700" 
-                          :style="{ width: getTimelineWidth(order.status) }"></div>
-                        <div v-for="(step, j) in timelineSteps" :key="step.key" class="relative flex flex-col items-center z-10">
-                          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300"
-                            :class="isStepCompleted(order.status, step.key) ? 'bg-purple-600 text-white shadow-md shadow-purple-200' : 'bg-slate-200 text-slate-400'">
-                            <Icon v-if="isStepCompleted(order.status, step.key)" icon="solar:check-circle-bold" class="w-4 h-4" />
-                            <span v-else>{{ j + 1 }}</span>
+                    <div v-if="order.status !== 'cancelled'" class="py-2">
+                      <div class="relative">
+                        <div class="h-1 bg-slate-200 rounded-full w-full">
+                          <div class="h-1 bg-purple-600 rounded-full transition-all duration-500" :style="{ width: getTimelineWidth(order.status) }"></div>
+                        </div>
+                        <div class="flex justify-between -mt-2">
+                          <div v-for="step in timelineSteps" :key="step.key" class="flex flex-col items-center">
+                            <div class="w-4 h-4 rounded-full border-2 transition-colors duration-300"
+                              :class="isStepCompleted(order.status, step.key) ? 'bg-purple-600 border-purple-600' : 'bg-white border-slate-300'"></div>
+                            <span class="text-[9px] font-bold mt-2 uppercase tracking-wider"
+                              :class="isStepCompleted(order.status, step.key) ? 'text-purple-600' : 'text-slate-400'">
+                              {{ step.label }}
+                            </span>
                           </div>
-                          <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-2 whitespace-nowrap">{{ step.label }}</span>
                         </div>
                       </div>
                     </div>
@@ -370,57 +247,54 @@
 
               <!-- ===== Profile Tab ===== -->
               <div v-if="activeTab === 'profile'" class="space-y-10">
-                <h1 class="text-3xl font-black text-slate-900 italic uppercase">Mon <span class="text-purple-600">Profil</span></h1>
-                
-                <!-- Success/Error Messages -->
-                <transition name="fade">
-                  <div v-if="profileMessage" class="p-4 rounded-2xl text-sm font-bold text-center" 
-                    :class="profileMessageType === 'success' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-rose-50 text-rose-600 border border-rose-200'">
-                    {{ profileMessage }}
-                  </div>
-                </transition>
+                <div class="flex justify-between items-center">
+                  <h1 class="text-3xl font-black text-slate-900 italic uppercase">Mon <span class="text-purple-600">Profil</span></h1>
+                  <transition name="fade">
+                    <span v-if="profileMessage" class="text-xs font-bold px-4 py-2 rounded-xl"
+                      :class="profileMessageType === 'success' ? 'bg-green-50 text-green-600' : 'bg-rose-50 text-rose-600'">
+                      {{ profileMessage }}
+                    </span>
+                  </transition>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div class="space-y-6">
                     <div class="space-y-2 group">
-                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-purple-600 transition-colors">Prénom</label>
-                      <input type="text" v-model="userForm.first_name" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
+                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prénom</label>
+                      <input type="text" v-model="userForm.first_name" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
                     </div>
                     <div class="space-y-2 group">
-                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-purple-600 transition-colors">Nom</label>
-                      <input type="text" v-model="userForm.last_name" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
+                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nom</label>
+                      <input type="text" v-model="userForm.last_name" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
                     </div>
                   </div>
                   <div class="space-y-6">
                     <div class="space-y-2">
-                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</label>
-                      <div class="relative">
-                        <input type="email" :value="user?.email" disabled class="w-full px-6 py-4 bg-slate-100 border border-slate-100 rounded-2xl focus:outline-none font-bold text-slate-400 cursor-not-allowed">
-                        <Icon icon="solar:lock-bold" class="w-4 h-4 text-slate-300 absolute right-4 top-1/2 -translate-y-1/2" />
-                      </div>
+                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email (non modifiable)</label>
+                      <input type="email" :value="user?.email" disabled class="w-full px-6 py-4 bg-slate-100 border border-slate-200 rounded-2xl focus:outline-none font-bold text-slate-400 cursor-not-allowed">
                     </div>
                     <div class="space-y-2 group">
-                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-purple-600 transition-colors">Téléphone</label>
-                      <input type="text" v-model="userForm.phone" placeholder="+225 XX XX XX XX XX" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
+                      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Téléphone</label>
+                      <input type="text" v-model="userForm.phone" placeholder="+229 XX XX XX XX" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all">
                     </div>
                   </div>
                   <!-- Address Field -->
                   <div class="space-y-2 md:col-span-2 group">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest group-focus-within:text-purple-600 transition-colors">Adresse</label>
-                    <textarea v-model="userForm.address" rows="3" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all resize-none" placeholder="Votre adresse complète..."></textarea>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adresse de livraison par défaut</label>
+                    <textarea v-model="userForm.address" rows="3" class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-300 font-bold text-slate-900 transition-all" placeholder="Votre adresse complète pour la livraison..."></textarea>
                   </div>
                 </div>
+
                 <div class="flex justify-end pt-6">
-                  <button @click="updateProfile" :disabled="savingProfile" class="group px-10 py-5 bg-slate-900 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-purple-600 transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-purple-300/30 disabled:opacity-50">
+                  <button @click="updateProfile" :disabled="savingProfile" class="group px-10 py-5 bg-slate-900 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-purple-600 transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-purple-200 hover:scale-[1.02] active:scale-95 disabled:opacity-50">
                     <span v-if="!savingProfile" class="flex items-center gap-2">
-                      <Icon icon="solar:check-circle-bold" class="w-4 h-4 transition-transform group-hover:scale-110" />
+                      <Icon icon="solar:check-read-linear" class="w-4 h-4" />
                       Sauvegarder les modifications
                     </span>
                     <span v-else class="flex items-center gap-2">
                       <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Sauvegarde...
+                      Enregistrement...
                     </span>
->>>>>>> 93cd25b (feat(deploy): prepare production deployment on Render, Supabase and Vercel with cash and transfer payment flows)
                   </button>
                 </div>
               </div>
@@ -431,17 +305,19 @@
                   <h1 class="text-3xl font-black text-slate-900 italic uppercase">Mes <span class="text-purple-600">Adresses</span></h1>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div v-if="user?.address" class="p-8 border border-slate-100 bg-gradient-to-br from-slate-50 to-purple-50/20 rounded-[2rem] relative group hover:shadow-lg transition-all duration-300 w-full">
-                    <div class="absolute top-4 right-4">
-                      <span class="px-2 py-1 rounded-full bg-green-100 text-green-600 text-[8px] font-black uppercase tracking-widest">Par défaut</span>
-                    </div>
-                    <div class="flex items-center gap-3 mb-4">
-                      <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                        <Icon icon="solar:home-bold-duotone" class="w-5 h-5 text-purple-600" />
+                  <div v-if="user?.address" class="p-8 border border-purple-100 bg-gradient-to-br from-purple-50/50 to-indigo-50/30 rounded-[2rem] relative group w-full hover:border-purple-200 transition-all duration-300 hover:shadow-lg hover:shadow-purple-100">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                          <Icon icon="solar:home-bold-duotone" class="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 class="font-black text-slate-900 uppercase text-xs tracking-widest">Adresse Principale</h4>
+                          <span class="text-[9px] font-bold text-purple-600 uppercase">Par défaut</span>
+                        </div>
                       </div>
-                      <h4 class="font-black text-slate-900 uppercase text-xs tracking-widest">Adresse Enregistrée</h4>
                     </div>
-                    <p class="text-slate-500 font-bold leading-relaxed whitespace-pre-line">{{ user.address }}</p>
+                    <p class="text-slate-600 font-bold leading-relaxed whitespace-pre-line text-sm mt-2">{{ user.address }}</p>
                     <div class="mt-6 flex gap-4">
                       <button @click="activeTab = 'profile'" class="flex items-center gap-1 text-[10px] font-black text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">
                         <Icon icon="solar:pen-bold" class="w-3 h-3" />
@@ -543,13 +419,14 @@
                 <div class="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
                   <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                      <Icon icon="solar:monitor-smartphone-bold-duotone" class="w-5 h-5 text-blue-600" />
+                      <Icon icon="solar:devices-bold-duotone" class="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Session active</h3>
-                      <p class="text-[10px] text-slate-400 font-bold mt-0.5">Appareil actuellement connecté</p>
+                      <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest">Sessions & Appareils</h3>
+                      <p class="text-[10px] text-slate-400 font-bold mt-0.5">Gérez vos connexions actives</p>
                     </div>
                   </div>
+
                   <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100">
                     <div class="flex items-center gap-3">
                       <Icon icon="solar:monitor-bold" class="w-8 h-8 text-slate-400" />
