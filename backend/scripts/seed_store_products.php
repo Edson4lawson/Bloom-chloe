@@ -118,6 +118,26 @@ $storeProducts = [
     ]
 ];
 
+// S'assurer que les catégories existent
+$requiredCategories = [
+    'Maison & Confort' => ['slug' => 'maison-confort', 'icon' => 'solar:sofa-bold'],
+    'Cuisine & Art de la Table' => ['slug' => 'cuisine-art-table', 'icon' => 'solar:cup-bold'],
+    'Entretien & Bricolage' => ['slug' => 'entretien-bricolage', 'icon' => 'solar:wrench-bold'],
+    'High-Tech & Gadgets' => ['slug' => 'hightech-gadgets', 'icon' => 'solar:laptop-bold']
+];
+
+$catInsertStmt = $pdo->prepare("INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name=name");
+foreach ($requiredCategories as $catName => $meta) {
+    $catInsertStmt->execute([$catName, $meta['slug'], $meta['icon']]);
+}
+
+// Recharger la liste des catégories
+$catStmt = $pdo->query("SELECT id, name FROM categories");
+$catMap = [];
+while($row = $catStmt->fetch(PDO::FETCH_ASSOC)) {
+    $catMap[$row['name']] = $row['id'];
+}
+
 $stmt = $pdo->prepare("
     INSERT INTO products (id, category_id, name, slug, description, price, stock, stock_quantity, image_url, rating, source, status) 
     VALUES (:id, :cat_id, :name, :slug, :desc, :price, 50, 50, :image, 4.8, 'store', 'published')
@@ -132,7 +152,7 @@ $stmt = $pdo->prepare("
 
 $count = 0;
 foreach ($storeProducts as $p) {
-    $catId = $catMap[$p['category']] ?? 35; // Default to Maison & Confort
+    $catId = $catMap[$p['category']] ?? null;
     
     // Générer le slug (ex: couvre-matelas-taies-impermeables-101)
     $cleanName = strtolower(trim($p['name']));

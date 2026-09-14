@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+vendor/
 dist
 dist-ssr
 *.local
@@ -56,6 +57,8 @@ bloom_rate_limit/
 *.sql
 *.sql.gz
 *.dump
+!database/sql/*.sql
+!database/migrations/*.sql
 backups/
 
 # Fichiers de session PHP

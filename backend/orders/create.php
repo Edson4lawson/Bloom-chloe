@@ -52,7 +52,7 @@ if ($isGuestOrder) {
 }
 
 // Valider la méthode de paiement
-$allowedPaymentMethods = ['credit_card', 'paypal', 'mobile_money', 'cash_on_delivery'];
+$allowedPaymentMethods = ['cash_on_delivery', 'transfer', 'mobile_money_bj', 'celtis_cash_bj', 'uba_bank', 'credit_card', 'paypal', 'mobile_money'];
 if (!empty($data['payment_method']) && !in_array($data['payment_method'], $allowedPaymentMethods)) {
     sendJsonResponse(['error' => 'Méthode de paiement non valide'], 400);
 }
@@ -244,14 +244,24 @@ try {
     
     // 6. Créer un enregistrement de paiement (si méthode de paiement fournie)
     if (!empty($data['payment_method'])) {
+        $paymentStatus = 'pending';
+        if ($data['payment_method'] === 'cash_on_delivery') {
+            $paymentStatus = 'pending_delivery';
+        } elseif ($data['payment_method'] === 'transfer') {
+            $paymentStatus = 'pending_verification';
+        }
+
         $paymentStmt = $pdo->prepare('INSERT INTO payments (
             order_id, transaction_id, provider, amount, currency, status, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?)');
 
-        $transactionId = 'ORD-' . time() . '-' . mt_rand(1000, 9999);
+        $transactionId = ($data['payment_method'] === 'cash_on_delivery')
+            ? 'COD-' . strtoupper(substr(uniqid(), -8))
+            : (($data['payment_method'] === 'transfer') ? 'TRF-' . strtoupper(substr(uniqid(), -8)) : 'ORD-' . time() . '-' . mt_rand(1000, 9999));
+
         $paymentData = [
             'provider' => $data['payment_method'],
-            'status' => 'pending',
+            'status' => $paymentStatus,
             'created_at' => date('Y-m-d H:i:s'),
             'guest_checkout' => $isGuestOrder
         ];
@@ -262,7 +272,7 @@ try {
             $data['payment_method'],
             $totalAmount,
             'XOF',
-            'pending',
+            $paymentStatus,
             json_encode($paymentData)
         ]);
     }

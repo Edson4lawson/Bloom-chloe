@@ -67,26 +67,20 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && echo "log_errors=On" >> "$PHP_INI_DIR/php.ini" \
     && echo "error_log=/var/log/php_errors.log" >> "$PHP_INI_DIR/php.ini"
 
-# Créer les répertoires nécessaires avec les bons permissions
+# Créer les répertoires nécessaires avec les bonnes permissions
 RUN mkdir -p /var/www/backend/logs \
     /var/www/bloom_rate_limit \
     /var/log/php \
+    && chmod +x /var/www/deployment/entrypoint.sh \
     && chown -R bloom:bloom /var/www \
     && chmod -R 755 /var/www
 
-# Configurer PHP-FPM
-RUN sed -i 's/user = nobody/user = bloom/g' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/group = nobody/group = bloom/g' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.owner = nobody/listen.owner = bloom/g' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.group = nobody/listen.group = bloom/g' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.mode = 0660/listen.mode = 0660/g' /usr/local/etc/php-fpm.d/www.conf
-
-# Exposer le port PHP-FPM
-EXPOSE 9000
+# Exposer le port par défaut
+EXPOSE 8080 9000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD php -r "file_exists('http://localhost:9000/health.php') || exit(1;"
+    CMD curl -f http://localhost:${PORT:-8080}/health.php || exit 1
 
-# Démarrer PHP-FPM
-CMD ["php-fpm"]
+# Démarrer le serveur API via le script de démarrage
+CMD ["/var/www/deployment/entrypoint.sh"]

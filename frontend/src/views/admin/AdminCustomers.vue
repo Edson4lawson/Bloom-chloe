@@ -5,19 +5,28 @@
         <h1 class="text-2xl font-black text-daba-navy dark:text-white">Gestion des Clients</h1>
         <p class="text-sm text-daba-slate dark:text-daba-slate-dark">{{ customers.length }} clients enregistrés</p>
       </div>
-      <div class="relative">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-daba-slate-dark" />
-        <input v-model="searchQuery" type="text" placeholder="Rechercher un client..."
-          class="pl-10 pr-4 py-2.5 bg-daba-cream dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl text-sm focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white w-64" />
+      <div class="flex items-center gap-3">
+        <button 
+          @click="loadCustomers" 
+          :disabled="loading"
+          class="p-2.5 bg-daba-cream dark:bg-[rgb(43,44,43)] border border-daba-cream-alt dark:border-slate-500 text-daba-slate dark:text-slate-300 rounded-xl hover:bg-daba-cream-alt dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+          title="Actualiser les clients"
+        >
+          <RotateCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        </button>
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-daba-slate-dark" />
+          <input v-model="searchQuery" type="text" placeholder="Rechercher un client..."
+            class="pl-10 pr-4 py-2.5 bg-daba-cream dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl text-sm focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white w-64" />
+        </div>
       </div>
     </div>
 
-    <div class="bg-daba-cream dark:bg-daba-dark-card rounded-3xl border border-daba-cream-alt dark:border-daba-dark-border overflow-hidden shadow-sm">
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
-      </div>
+    <div class="bg-daba-cream dark:bg-[rgb(43,44,43)] rounded-3xl border border-daba-cream-alt dark:border-slate-500 overflow-hidden shadow-sm relative">
+      <!-- Top Loading Bar -->
+      <div v-if="loading" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-daba-orange via-daba-navy to-daba-orange animate-pulse z-10"></div>
 
-      <table v-else class="w-full">
+      <table class="w-full">
         <thead>
           <tr class="bg-daba-cream-alt dark:bg-daba-dark-card/30 text-left">
             <th class="px-6 py-4 text-[10px] font-black text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Client</th>
@@ -28,7 +37,40 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="customer in filteredCustomers" :key="customer.id" class="border-t border-daba-cream-alt dark:border-daba-dark-border hover:bg-daba-cream-alt/50 dark:hover:bg-slate-800/20 transition-colors">
+          <!-- Loading Skeletons -->
+          <tr v-if="loading" v-for="n in 5" :key="'skeleton-' + n" class="border-t border-daba-cream-alt dark:border-slate-700 animate-pulse">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-daba-cream-alt dark:bg-slate-700"></div>
+                <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-28"></div>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-36"></div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-5 bg-daba-cream-alt dark:bg-slate-700 rounded-full w-16"></div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-20"></div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-else-if="filteredCustomers.length === 0">
+            <td colspan="5" class="px-6 py-16 text-center text-daba-slate dark:text-slate-400 text-sm font-medium">
+              <div class="flex flex-col items-center justify-center space-y-2">
+                <Users class="w-10 h-10 text-daba-slate-dark dark:text-slate-500 stroke-[1.5]" />
+                <p>Aucun client trouvé</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows -->
+          <tr v-else v-for="customer in filteredCustomers" :key="customer.id" class="border-t border-daba-cream-alt dark:border-slate-700 hover:bg-daba-cream-alt/50 dark:hover:bg-slate-700/20 transition-colors">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3 cursor-pointer hover:bg-daba-cream-alt dark:hover:bg-slate-800/20 rounded-lg p-2 transition-colors" @click="viewCustomerOrders(customer)">
                 <div class="w-9 h-9 rounded-full bg-daba-orange/10 flex items-center justify-center text-daba-orange text-xs font-bold uppercase">
@@ -38,60 +80,61 @@
               </div>
             </td>
             <td class="px-6 py-4 text-sm text-daba-slate dark:text-daba-slate-dark">{{ customer.email }}</td>
-            <td class="px-6 py-4 text-xs text-daba-slate">{{ formatDate(customer.created_at) }}</td>
+            <td class="px-6 py-4 text-sm text-daba-slate dark:text-daba-slate-dark">{{ formatDate(customer.created_at) }}</td>
             <td class="px-6 py-4">
-              <span :class="customer.role === 'admin' ? 'bg-daba-cream-alt text-daba-navy' : 'bg-daba-cream-alt text-daba-slate'"
-                class="px-2 py-1 text-[10px] font-bold rounded-full uppercase">{{ customer.role || 'client' }}</span>
+              <span class="px-2.5 py-1 text-[10px] font-black uppercase rounded-full"
+                :class="customer.role === 'admin' ? 'bg-daba-cream-alt text-daba-orange dark:bg-daba-orange/20 dark:text-daba-orange' : 'bg-daba-cream-alt text-daba-navy dark:bg-daba-navy/20 dark:text-daba-slate-dark'">
+                {{ customer.role || 'client' }}
+              </span>
             </td>
             <td class="px-6 py-4">
-              <button @click="toggleRole(customer)" class="text-xs font-bold text-daba-orange hover:text-daba-green transition-colors">
-                {{ customer.role === 'admin' ? 'Retirer admin' : 'Rendre admin' }}
+              <button @click="toggleRole(customer)"
+                class="text-xs font-bold text-daba-orange hover:text-daba-orange/80 transition-colors">
+                {{ customer.role === 'admin' ? 'Rétrograder' : 'Promouvoir Admin' }}
               </button>
             </td>
-          </tr>
-          <tr v-if="filteredCustomers.length === 0">
-            <td colspan="5" class="px-6 py-12 text-center text-sm text-daba-slate-dark">Aucun client trouvé</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Customer Orders Modal -->
-    <div v-if="selectedCustomer" class="fixed inset-0 bg-daba-dark-bg/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-daba-cream dark:bg-daba-dark-card rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-transparent dark:border-daba-dark-border">
-        <div class="px-8 py-6 border-b border-daba-cream-alt dark:border-daba-dark-border flex items-center justify-between bg-daba-cream-alt/50 dark:bg-daba-dark-card/20 flex-shrink-0">
+    <!-- Modal des commandes du client -->
+    <div v-if="selectedCustomer" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-daba-cream dark:bg-daba-dark-card rounded-3xl max-w-2xl w-full p-6 border border-daba-cream-alt dark:border-daba-dark-border max-h-[80vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-xl font-bold text-daba-navy dark:text-white">Commandes de {{ selectedCustomer.first_name }} {{ selectedCustomer.last_name }}</h2>
-            <p class="text-sm text-daba-slate dark:text-daba-slate-dark">{{ selectedCustomer.email }}</p>
+            <h3 class="text-lg font-black text-daba-navy dark:text-white">
+              Commandes de {{ selectedCustomer.first_name }} {{ selectedCustomer.last_name }}
+            </h3>
+            <p class="text-xs text-daba-slate dark:text-daba-slate-dark">{{ selectedCustomer.email }}</p>
           </div>
-          <button @click="selectedCustomer = null" class="text-daba-slate-dark hover:text-daba-navy dark:hover:text-white">
-            <X class="w-6 h-6" />
+          <button @click="selectedCustomer = null" class="p-2 text-daba-slate hover:text-daba-navy dark:hover:text-white">
+            <X class="w-5 h-5" />
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-8">
-          <div v-if="loadingOrders" class="flex items-center justify-center py-20">
-            <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
-          </div>
+        <div v-if="loadingOrders" class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
+        </div>
 
-          <div v-else-if="customerOrders.length === 0" class="text-center py-12 text-daba-slate-dark">
-            Aucune commande pour ce client
-          </div>
+        <div v-else-if="customerOrders.length === 0" class="text-center py-12 text-daba-slate dark:text-daba-slate-dark">
+          Aucune commande pour ce client
+        </div>
 
-          <div v-else class="space-y-4">
-            <div v-for="order in customerOrders" :key="order.id" class="bg-daba-cream-alt dark:bg-daba-dark-card/30 rounded-xl p-6 border border-daba-cream-alt dark:border-daba-dark-border">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                  <span class="text-sm font-bold text-daba-navy dark:text-white">#{{ order.id }}</span>
-                  <span :class="getStatusClass(order.status)" class="px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full">
-                    {{ order.status }}
-                  </span>
-                </div>
-                <span class="text-sm font-bold text-daba-navy dark:text-white">{{ order.total_amount }} FCFA</span>
+        <div v-else class="space-y-3">
+          <div v-for="order in customerOrders" :key="order.id" 
+            class="p-4 bg-daba-cream-alt/50 dark:bg-daba-dark-card/50 rounded-2xl border border-daba-cream-alt dark:border-daba-dark-border">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-daba-navy dark:text-white">#{{ order.id }}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full" :class="getStatusClass(order.status)">
+                  {{ order.status }}
+                </span>
               </div>
-              <div class="text-xs text-daba-slate dark:text-daba-slate-dark">
-                {{ formatDate(order.created_at) }}
-              </div>
+              <span class="text-sm font-bold text-daba-navy dark:text-white">{{ order.total_amount }} FCFA</span>
+            </div>
+            <div class="text-xs text-daba-slate dark:text-daba-slate-dark">
+              {{ formatDate(order.created_at) }}
             </div>
           </div>
         </div>
@@ -102,7 +145,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Search, X } from 'lucide-vue-next'
+import { Search, RotateCw, Users, X } from 'lucide-vue-next'
 import adminService from '@/services/adminService'
 
 const customers = ref([])
@@ -156,14 +199,14 @@ const viewCustomerOrders = async (customer) => {
 }
 
 const getStatusClass = (status) => {
-  const s = status.toLowerCase()
+  const s = (status || '').toLowerCase()
   if (s.includes('completed') || s.includes('livré') || s.includes('delivered')) return 'bg-daba-cream-alt text-daba-green'
   if (s.includes('pending') || s.includes('en attente')) return 'bg-daba-cream-alt text-daba-orange'
   if (s.includes('cancel')) return 'bg-daba-cream-alt text-rose-600'
   return 'bg-daba-cream-alt text-daba-orange'
 }
 
-onMounted(async () => {
+const loadCustomers = async () => {
   loading.value = true
   try {
     const result = await adminService.getCustomers()
@@ -173,5 +216,9 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(() => {
+  loadCustomers()
 })
 </script>

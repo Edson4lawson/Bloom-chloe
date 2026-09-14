@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/backend/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "🌱 Seed des ANCIENS produits Bloom-Chloe...\n\n";
 
@@ -10,20 +10,20 @@ foreach ($categoriesDb as $cat) {
     $categoryMap[strtolower(trim($cat['name']))] = $cat['id'];
 }
 
-function findCategoryId($categoryName, $categoryMap) {
+function findCategoryId(string $categoryName, array $categoryMap): ?int {
     $key = strtolower(trim($categoryName));
     if (isset($categoryMap[$key])) {
-        return $categoryMap[$key];
+        return (int)$categoryMap[$key];
     }
     foreach ($categoryMap as $name => $id) {
         if (strpos($key, $name) !== false || strpos($name, $key) !== false) {
-            return $id;
+            return (int)$id;
         }
     }
     return null;
 }
 
-function generateSlug($title, $id) {
+function generateSlug(string $title, int|string $id): string {
     $slug = strtolower(trim($title));
     $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
     $slug = preg_replace('/[\s-]+/', '-', $slug);

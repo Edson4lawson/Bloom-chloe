@@ -195,6 +195,147 @@ try {
         echo "○ Migration déjà effectuée\n";
     }
     
+    // Table password_resets
+    echo "\n=== MIGRATION: PRODUCT COLUMNS & FLAGS ===\n";
+    $productColumns = [
+        "ALTER TABLE products ADD COLUMN is_featured TINYINT(1) DEFAULT 0",
+        "ALTER TABLE products ADD COLUMN is_newest TINYINT(1) DEFAULT 0",
+        "ALTER TABLE products ADD COLUMN is_bestseller TINYINT(1) DEFAULT 0",
+        "ALTER TABLE products ADD COLUMN is_special_offer TINYINT(1) DEFAULT 0",
+        "ALTER TABLE products MODIFY COLUMN source VARCHAR(50) DEFAULT 'produit'"
+    ];
+
+    foreach ($productColumns as $sql) {
+        try {
+            $pdo->exec($sql);
+            echo "✓ Colonne / Structure produit mise à jour\n";
+        } catch (PDOException $e) {
+            echo "○ Colonne déjà présente ou inchangée\n";
+        }
+    }
+
+    echo "\n=== MIGRATION 001: PASSWORD RESETS & FRAUD FLAGS ===\n";
+    $additionalTables = [
+        "CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            token VARCHAR(64) NOT NULL UNIQUE,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            ip_address VARCHAR(45) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_token (token),
+            INDEX idx_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        
+        "CREATE TABLE IF NOT EXISTS fraud_flags (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            reason TEXT NOT NULL,
+            resolved TINYINT(1) DEFAULT 0,
+            resolved_by INT,
+            resolved_at DATETIME,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (resolved_by) REFERENCES users(id),
+            INDEX idx_user_id (user_id),
+            INDEX idx_resolved (resolved)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    ];
+
+    foreach ($additionalTables as $sql) {
+        try {
+            $pdo->exec($sql);
+            echo "✓ Table créée\n";
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'already exists') !== false) {
+                echo "○ Table existe déjà\n";
+            } else {
+                echo "✗ Erreur: " . $e->getMessage() . "\n";
+            }
+        }
+    }
+
+    // Insérer les permissions
+    echo "\n=== INSERTION DES PERMISSIONS RBAC ===\n";
+    $permissions = [
+        ['products.view', 'Voir les produits', 'products'],
+        ['products.create', 'Créer des produits', 'products'],
+        ['products.update', 'Modifier les produits', 'products'],
+        ['products.delete', 'Supprimer les produits', 'products'],
+        ['orders.view', 'Voir les commandes', 'orders'],
+        ['orders.view_all', 'Voir toutes les commandes', 'orders'],
+        ['orders.update_status', 'Modifier le statut des commandes', 'orders'],
+        ['orders.refund', 'Rembourser les commandes', 'orders'],
+        ['users.view', 'Voir les utilisateurs', 'users'],
+        ['users.create', 'Créer des utilisateurs', 'users'],
+        ['users.update', 'Modifier les utilisateurs', 'users'],
+        ['users.delete', 'Supprimer les utilisateurs', 'users'],
+        ['users.manage_roles', 'Gérer les rôles utilisateurs', 'users'],
+        ['categories.view', 'Voir les catégories', 'categories'],
+        ['categories.create', 'Créer des catégories', 'categories'],
+        ['categories.update', 'Modifier les catégories', 'categories'],
+        ['categories.delete', 'Supprimer les catégories', 'categories'],
+        ['reports.view', 'Voir les rapports', 'reports'],
+        ['reports.export', 'Exporter les rapports', 'reports'],
+        ['system.settings', 'Modifier les paramètres système', 'system'],
+        ['system.logs', 'Voir les logs système', 'system'],
+        ['system.backup', 'Gérer les sauvegardes', 'system']
+    ];
+
+    $permStmt = $pdo->prepare("INSERT INTO permissions (name, description, module) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name=name");
+    foreach ($permissions as $perm) {
+        try {
+            $permStmt->execute($perm);
+            echo "✓ Permission {$perm[0]} configurée\n";
+        } catch (PDOException $e) {
+            echo "○ Permission {$perm[0]} existe déjà\n";
+        }
+    }
+
+    // Assigner les permissions aux rôles
+    $rolePermQueries = [
+        "INSERT INTO role_permissions (role_id, permission_id)
+         SELECT r.id, p.id FROM roles r, permissions p
+         WHERE r.name = 'customer' AND p.name IN ('products.view', 'orders.view')
+         ON DUPLICATE KEY UPDATE role_id=role_id",
+        
+        "INSERT INTO role_permissions (role_id, permission_id)
+         SELECT r.id, p.id FROM roles r, permissions p
+         WHERE r.name = 'support' AND p.name IN ('products.view', 'orders.view', 'orders.view_all', 'orders.update_status')
+         ON DUPLICATE KEY UPDATE role_id=role_id",
+         
+        "INSERT INTO role_permissions (role_id, permission_id)
+         SELECT r.id, p.id FROM roles r, permissions p
+         WHERE r.name = 'manager' AND p.name IN (
+             'products.view', 'products.create', 'products.update',
+             'orders.view', 'orders.view_all', 'orders.update_status', 'orders.refund',
+             'categories.view', 'categories.create', 'categories.update',
+             'reports.view', 'reports.export'
+         )
+         ON DUPLICATE KEY UPDATE role_id=role_id",
+         
+        "INSERT INTO role_permissions (role_id, permission_id)
+         SELECT r.id, p.id FROM roles r, permissions p
+         WHERE r.name = 'admin' AND p.name NOT IN ('system.backup')
+         ON DUPLICATE KEY UPDATE role_id=role_id",
+         
+        "INSERT INTO role_permissions (role_id, permission_id)
+         SELECT r.id, p.id FROM roles r, permissions p
+         WHERE r.name = 'super_admin'
+         ON DUPLICATE KEY UPDATE role_id=role_id"
+    ];
+
+    foreach ($rolePermQueries as $rpSql) {
+        try {
+            $pdo->exec($rpSql);
+            echo "✓ Permissions assignées au rôle\n";
+        } catch (PDOException $e) {
+            echo "○ Assignation déjà en place\n";
+        }
+    }
+
     echo "\n=== VÉRIFICATION ===\n";
     
     $result = $pdo->query("SHOW TABLES");

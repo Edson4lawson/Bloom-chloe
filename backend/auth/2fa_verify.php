@@ -58,7 +58,7 @@ try {
             ]);
         }
         
-        sendJsonResponse(['error' => 'C de secours inve'], 400
+        sendJsonResponse(['error' => 'Code de secours invalide'], 400);
     }
     
     // Vérifier le code TOTP
@@ -87,7 +87,7 @@ try {
  * Vérifie un code TOTP
  * Implémentation simplifiée - utiliser robthree/twofactorauth en production
  */
-function verifyTOTP($secret, $code) {
+function verifyTOTP(string $secret, string $code): bool {
     // Décoder le secret Base32
     $secret = base32Decode($secret);
     
@@ -110,7 +110,7 @@ function verifyTOTP($secret, $code) {
 /**
  * Génère un code TOTP pour un compteur donné
  */
-function generateTOTPCode($secret, $counter) {
+function generateTOTPCode(string $secret, int $counter): string {
     // Convertir le compteur en bytes (big-endian)
     $counterBytes = pack('N*', 0) . pack('N*', $counter);
     
@@ -126,13 +126,13 @@ function generateTOTPCode($secret, $counter) {
         (ord($hash[$offset + 3]) & 0xFF)
     ) % 1000000;
     
-    return str_pad($code, 6, '0', STR_PAD_LEFT);
+    return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
 }
 
 /**
  * Décode un secret Base32
  */
-function base32Decode($secret) {
+function base32Decode(string $secret): string {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     $secret = strtoupper($secret);
     

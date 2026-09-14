@@ -259,7 +259,7 @@
             Catégories
           </h2>
           <div class="space-y-4 flex-1">
-            <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between border-b border-white/5 pb-2">
+            <div v-for="cat in topCategories" :key="cat.id" class="flex items-center justify-between border-b border-white/5 pb-2">
               <span class="text-sm font-medium text-white/80">{{ cat.name }}</span>
               <span class="px-2 py-0.5 rounded-lg bg-white/10 text-[10px] font-black">{{ cat.product_count }} items</span>
             </div>
@@ -361,6 +361,13 @@ const categories = ref([])
 const isLoading = ref(true)
 
 let ctxn = null;
+
+// Top 6 des catégories avec le plus grand nombre de produits
+const topCategories = computed(() => {
+  return [...categories.value]
+    .sort((a, b) => (Number(b.product_count) || 0) - (Number(a.product_count) || 0))
+    .slice(0, 6)
+})
 
 // Date formatée affichée en haut (ex: "lundi 4 février")
 const currentDate = computed(() => {

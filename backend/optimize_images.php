@@ -52,7 +52,7 @@ foreach ($images as $image) {
             break;
         default:
             echo "⏭️  Format non supporté: $filename\n";
-            continue;
+            continue 2;
     }
     
     if ($img === false) {

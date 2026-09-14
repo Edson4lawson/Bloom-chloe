@@ -59,7 +59,7 @@
         <p class="text-daba-slate max-w-md mx-auto">Essayez de changer de catégorie ou de filtre. Si le problème persiste, vérifiez votre connexion ou rechargez la page.</p>
         <div class="mt-8 flex items-center justify-center gap-4">
           <button @click="selectedCategory = 'all'" class="px-6 py-3 bg-daba-navy text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-daba-orange transition-all">Voir tout</button>
-          <button @click="window.location.reload()" class="px-6 py-3 bg-daba-cream border border-daba-cream-alt text-daba-navy rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-daba-cream-alt transition-all flex items-center gap-2">
+          <button @click="reloadPage" class="px-6 py-3 bg-daba-cream border border-daba-cream-alt text-daba-navy rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-daba-cream-alt transition-all flex items-center gap-2">
             <Icon icon="solar:restart-linear" class="w-4 h-4" />
             Recharger
           </button>
@@ -195,6 +195,10 @@ const toggleWishlist = (product) => {
 const addToCart = async (product) => {
   await cartStore.addToCart(product);
   showToast('Produit ajouté au panier');
+};
+
+const reloadPage = () => {
+  window.location.reload();
 };
 
 const showToast = (title) => {

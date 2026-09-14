@@ -14,12 +14,11 @@
  * @param int $maxAttempts Nombre maximum de tentatives
  * @param int $windowSeconds Fenêtre de temps en secondes
  */
-function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
+function rateLimit(string $endpoint, int $maxAttempts = 60, int $windowSeconds = 60): void {
     // Désactiver en développement
-    if (getenv('APP_ENV') !== 'production') {
+    if (getenv('APP_ENV') !== 'production' && ($_ENV['APP_ENV'] ?? '') !== 'production') {
         return;
     }
-
     $ip = getClientIP();
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
     $key = "rate_limit:{$endpoint}:{$ip}";
@@ -48,8 +47,10 @@ function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
         }
     }
     
-    // Détection de changement d'user-agent (possible attaque)
-    if (isset($data['user_agent_hash']) && $data['user_agent_hash'] !== md5($userAgent)) {
+    $isLocalhost = in_array($ip, ['127.0.0.1', '::1']) || in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1', 'localhost:8080', '127.0.0.1:8080']);
+    
+    // Détection de changement d'user-agent (possible attaque - ignoré en local)
+    if (!$isLocalhost && isset($data['user_agent_hash']) && $data['user_agent_hash'] !== md5($userAgent)) {
         logSuspiciousActivity($ip, $endpoint, 'user_agent_changed');
         // Bloquer immédiatement si l'user-agent change
         $data['blocked_until'] = time() + 3600; // 1 heure
@@ -58,6 +59,10 @@ function rateLimit($endpoint, $maxAttempts = 60, $windowSeconds = 60) {
         http_response_code(403);
         echo json_encode(['error' => 'Accès refusé pour raisons de sécurité']);
         exit();
+    }
+    
+    if ($isLocalhost) {
+        $data['user_agent_hash'] = md5($userAgent);
     }
     
     // Vérifier si bloqué
@@ -182,7 +187,7 @@ function getClientIP() {
 /**
  * Formate une durée en secondes en texte lisible
  */
-function formatDuration($seconds) {
+function formatDuration(int $seconds): string {
     if ($seconds < 60) {
         return $seconds . ' seconde' . ($seconds > 1 ? 's' : '');
     } elseif ($seconds < 3600) {
@@ -197,7 +202,7 @@ function formatDuration($seconds) {
 /**
  * Log les activités suspectes
  */
-function logSuspiciousActivity($ip, $endpoint, $type) {
+function logSuspiciousActivity(string $ip, string $endpoint, string $type): void {
     $logDir = __DIR__ . '/../logs';
     if (!is_dir($logDir)) {
         mkdir($logDir, 0755, true);

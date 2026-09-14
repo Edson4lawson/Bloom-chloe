@@ -50,11 +50,11 @@ foreach ($staticPages as $page) {
 # =============================================================================
 
 try {
-    $stmt = $pdo->query("SELECT slug, updated_at FROM categories WHERE slug IS NOT NULL ORDER BY name");
+    $stmt = $pdo->query("SELECT slug, created_at FROM categories WHERE slug IS NOT NULL ORDER BY name");
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($categories as $cat) {
-        $catLastmod = $cat['updated_at'] ? date('Y-m-d', strtotime($cat['updated_at'])) : $lastmod;
+        $catLastmod = !empty($cat['created_at']) ? date('Y-m-d', strtotime($cat['created_at'])) : $lastmod;
         $xml .= '<url>';
         $xml .= '<loc>' . $baseUrl . '/categorie/' . htmlspecialchars($cat['slug']) . '</loc>';
         $xml .= '<lastmod>' . $catLastmod . '</lastmod>';

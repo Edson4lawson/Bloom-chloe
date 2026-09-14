@@ -3,16 +3,13 @@ require_once __DIR__ . '/backend/config/db.php';
 
 try {
     echo "DB Connection: OK\n";
-    $stmt = $pdo->query("SHOW COLUMNS FROM users");
-    $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo "Columns in 'users' table:\n";
-    foreach ($columns as $col) {
-        echo "- " . $col['Field'] . " (" . $col['Type'] . ")\n";
+    $users = $pdo->query("SELECT id, email, password, role, failed_login_attempts, locked_until, two_factor_required FROM users")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($users as $u) {
+        echo "User ID: {$u['id']} | Email: {$u['email']} | Role: {$u['role']} | Failed attempts: {$u['failed_login_attempts']} | Locked: {$u['locked_until']}\n";
+        echo "Password matches 'admin123': " . (password_verify('admin123', $u['password']) ? 'YES' : 'NO') . "\n";
+        echo "Password matches 'Admin123!': " . (password_verify('Admin123!', $u['password']) ? 'YES' : 'NO') . "\n";
+        echo "Password matches 'password123': " . (password_verify('password123', $u['password']) ? 'YES' : 'NO') . "\n";
     }
-    
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users");
-    $stmt->execute();
-    echo "Total users: " . $stmt->fetchColumn() . "\n";
     
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";

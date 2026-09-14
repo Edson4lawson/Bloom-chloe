@@ -2,10 +2,20 @@
   <div class="p-6">
     <!-- Header -->
     <div class="order-header flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-daba-navy dark:text-white">Gestion des Commandes</h1>
+      <div>
+        <h1 class="text-2xl font-bold text-daba-navy dark:text-white">Gestion des Commandes</h1>
+        <p class="text-sm text-daba-slate dark:text-daba-slate-dark">Suivez et mettez à jour les commandes de vos clients</p>
+      </div>
+      <button 
+        @click="loadOrders" 
+        :disabled="loading"
+        class="p-2.5 bg-daba-cream dark:bg-[rgb(43,44,43)] border border-daba-cream-alt dark:border-slate-500 text-daba-slate dark:text-slate-300 rounded-xl hover:bg-daba-cream-alt dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+        title="Actualiser les commandes"
+      >
+        <RotateCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+      </button>
     </div>
 
-    <!-- Filters -->
     <!-- Filters -->
     <div class="order-filters bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm p-4 mb-6 border border-daba-cream-alt dark:border-daba-dark-border">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -28,12 +38,11 @@
     </div>
 
     <!-- Orders Table -->
-    <!-- Orders Table -->
-    <div class="order-table-container bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm overflow-hidden border border-daba-cream-alt dark:border-daba-dark-border">
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
-      </div>
-      <table v-else class="min-w-full divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
+    <div class="order-table-container bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm overflow-hidden border border-daba-cream-alt dark:border-daba-dark-border relative">
+      <!-- Top Loading Bar -->
+      <div v-if="loading" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-daba-orange via-daba-navy to-daba-orange animate-pulse z-10"></div>
+
+      <table class="min-w-full divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
         <thead class="bg-daba-cream-alt dark:bg-daba-dark-card/50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-daba-slate dark:text-daba-slate-dark uppercase">ID</th>
@@ -46,7 +55,44 @@
           </tr>
         </thead>
         <tbody class="bg-daba-cream dark:bg-daba-dark-card divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
-          <tr v-for="order in filteredOrders" :key="order.id" class="order-row hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+          <!-- Loading Skeletons -->
+          <tr v-if="loading" v-for="n in 5" :key="'skeleton-' + n" class="animate-pulse">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-12"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-5 bg-daba-cream-alt dark:bg-slate-700 rounded-full w-16"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap space-y-2">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-32"></div>
+              <div class="h-3 bg-daba-cream-alt dark:bg-slate-800 rounded w-44"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-6 bg-daba-cream-alt dark:bg-slate-700 rounded-full w-24"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-14"></div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-else-if="filteredOrders.length === 0">
+            <td colspan="7" class="px-6 py-16 text-center text-daba-slate dark:text-slate-400 text-sm font-medium">
+              <div class="flex flex-col items-center justify-center space-y-2">
+                <ShoppingCart class="w-10 h-10 text-daba-slate-dark dark:text-slate-500 stroke-[1.5]" />
+                <p>Aucune commande trouvée</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows -->
+          <tr v-else v-for="order in filteredOrders" :key="order.id" class="order-row hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-daba-navy dark:text-white">
               #{{ order.id }}
             </td>
@@ -60,7 +106,7 @@
               <div class="text-sm font-medium text-daba-navy dark:text-white">{{ order.user_name }}</div>
               <div class="text-sm text-daba-slate dark:text-daba-slate-dark">{{ order.user_email }}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-daba-navy dark:text-white">{{ order.total_amount }}FCFA</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-daba-navy dark:text-white">{{ order.total_amount }} FCFA</td>
             <td class="px-6 py-4 whitespace-nowrap">
               <select 
                 v-model="order.status" 
@@ -79,46 +125,60 @@
               {{ formatDate(order.created_at) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <router-link :to="`/admin/orders/${order.id}`" class="text-daba-orange dark:text-daba-orange hover:text-daba-navy dark:hover:text-white">
+              <button @click="viewOrderDetail(order.id)" class="text-daba-orange hover:text-daba-navy dark:hover:text-white">
                 Détails
-              </router-link>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Order Detail Modal -->
-    <div v-if="selectedOrder" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-daba-dark-border">
-        <div class="sticky top-0 bg-daba-cream dark:bg-daba-dark-card z-10 px-6 py-4 border-b border-daba-cream-alt dark:border-daba-dark-border flex justify-between items-center">
+    <!-- Order Details Modal -->
+    <div v-if="selectedOrder" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-daba-cream dark:bg-daba-dark-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-daba-cream-alt dark:border-daba-dark-border">
+        <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-daba-navy dark:text-white">Détails de la commande #{{ selectedOrder.id }}</h2>
-          <button @click="selectedOrder = null" class="text-daba-slate dark:text-daba-slate-dark hover:text-daba-navy dark:hover:text-white">
-            <X class="w-6 h-6" />
+          <button @click="selectedOrder = null" class="text-daba-slate hover:text-daba-navy dark:hover:text-white">
+            <X class="w-5 h-5" />
           </button>
         </div>
-        
-        <div class="p-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-daba-cream-alt dark:bg-daba-dark-card/50 p-6 rounded-xl border border-daba-cream-alt dark:border-daba-dark-border">
-              <h3 class="font-bold text-lg mb-4 text-daba-navy dark:text-white flex items-center">
-                <User class="w-5 h-5 mr-2" /> Informations client
-              </h3>
-              <div class="space-y-2 text-sm">
-                <p class="text-daba-slate dark:text-daba-slate-dark">Nom: <span class="font-medium text-daba-navy dark:text-white">{{ selectedOrder.user_name }}</span></p>
-                <p class="text-daba-slate dark:text-daba-slate-dark">Email: <span class="font-medium text-daba-navy dark:text-white">{{ selectedOrder.user_email }}</span></p>
-                <p class="text-daba-slate dark:text-daba-slate-dark">Téléphone: <span class="font-medium text-daba-navy dark:text-white">{{ selectedOrder.phone || 'N/A' }}</span></p>
+
+        <div class="space-y-6">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <h3 class="font-bold text-sm text-daba-slate dark:text-daba-slate-dark uppercase mb-2">Informations client</h3>
+              <div class="bg-daba-cream-alt/50 dark:bg-daba-dark-card/50 p-4 rounded-xl space-y-2 border border-daba-cream-alt dark:border-daba-dark-border">
+                <div class="flex items-center gap-2">
+                  <User class="w-4 h-4 text-daba-slate" />
+                  <span class="text-sm font-medium text-daba-navy dark:text-white">{{ selectedOrder.user_name }}</span>
+                </div>
+                <div class="text-xs text-daba-slate dark:text-daba-slate-dark">{{ selectedOrder.user_email }}</div>
+                <div class="text-xs text-daba-slate dark:text-daba-slate-dark">{{ selectedOrder.shipping_address }}</div>
               </div>
             </div>
-            <div class="bg-daba-cream-alt dark:bg-daba-dark-card/50 p-6 rounded-xl border border-daba-cream-alt dark:border-daba-dark-border">
-              <h3 class="font-bold text-lg mb-4 text-daba-navy dark:text-white flex items-center">
-                <Package class="w-5 h-5 mr-2" /> Informations commande
-              </h3>
-              <div class="space-y-2 text-sm">
-                <p class="text-daba-slate dark:text-daba-slate-dark">Date: <span class="font-medium text-daba-navy dark:text-white">{{ formatDate(selectedOrder.created_at) }}</span></p>
-                <p class="text-daba-slate dark:text-daba-slate-dark">Canal: <span :class="getCanalClass(selectedOrder.canal)" class="px-2 py-0.5 text-[10px] font-black uppercase rounded-full inline-flex items-center gap-1"><component :is="getCanalIcon(selectedOrder.canal)" class="w-3 h-3" /> {{ selectedOrder.canal || 'site' }}</span></p>
-                <p class="text-daba-slate dark:text-daba-slate-dark">Statut: <span class="font-medium text-daba-navy dark:text-white">{{ selectedOrder.status }}</span></p>
-                <p class="text-daba-slate dark:text-daba-slate-dark">Total: <span class="font-medium text-daba-navy dark:text-white">{{ selectedOrder.total_amount }}FCFA</span></p>
+
+            <div>
+              <h3 class="font-bold text-sm text-daba-slate dark:text-daba-slate-dark uppercase mb-2">Détails commande</h3>
+              <div class="bg-daba-cream-alt/50 dark:bg-daba-dark-card/50 p-4 rounded-xl space-y-2 border border-daba-cream-alt dark:border-daba-dark-border">
+                <div class="flex justify-between text-xs">
+                  <span class="text-daba-slate dark:text-daba-slate-dark">Date:</span>
+                  <span class="font-medium text-daba-navy dark:text-white">{{ formatDate(selectedOrder.created_at) }}</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-daba-slate dark:text-daba-slate-dark">Statut:</span>
+                  <span :class="getStatusClass(selectedOrder.status)" class="px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    {{ selectedOrder.status }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-xs">
+                  <span class="text-daba-slate dark:text-daba-slate-dark">Canal:</span>
+                  <span class="font-medium text-daba-navy dark:text-white uppercase">{{ selectedOrder.canal || 'site' }}</span>
+                </div>
+                <div class="flex justify-between text-sm font-bold border-t border-daba-cream-alt dark:border-daba-dark-border pt-2 mt-2">
+                  <span class="text-daba-navy dark:text-white">Total:</span>
+                  <span class="text-daba-orange">{{ selectedOrder.total_amount }} FCFA</span>
+                </div>
               </div>
             </div>
           </div>
@@ -138,9 +198,9 @@
                 <tbody class="bg-daba-cream dark:bg-daba-dark-card divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
                   <tr v-for="item in selectedOrder.items" :key="item.id">
                     <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ item.product_name }}</td>
-                    <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ item.price }}FCFA</td>
+                    <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ item.price }} FCFA</td>
                     <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ item.quantity }}</td>
-                    <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ (item.price * item.quantity).toFixed(2) }}FCFA</td>
+                    <td class="px-4 py-3 text-sm text-daba-navy dark:text-white">{{ (item.price * item.quantity).toFixed(2) }} FCFA</td>
                   </tr>
                 </tbody>
               </table>
@@ -155,7 +215,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import adminService from '@/services/adminService.js'
-import { X, User, Package, Globe, MessageSquare } from 'lucide-vue-next'
+import { X, User, Package, Globe, MessageSquare, RotateCw, ShoppingCart } from 'lucide-vue-next'
 import { gsap } from 'gsap'
 
 const orders = ref([])
@@ -167,10 +227,10 @@ const filteredOrders = computed(() => {
   return orders.value.filter(order => {
     const matchesSearch = !filters.value.search || 
       order.id.toString().includes(filters.value.search) ||
-      order.user_name.toLowerCase().includes(filters.value.search.toLowerCase())
+      (order.user_name && order.user_name.toLowerCase().includes(filters.value.search.toLowerCase()))
     const matchesStatus = !filters.value.status || order.status === filters.value.status
     const matchesDate = !filters.value.date || 
-      order.created_at.startsWith(filters.value.date)
+      (order.created_at && order.created_at.startsWith(filters.value.date))
     const matchesCanal = !filters.value.canal || order.canal === filters.value.canal
     
     return matchesSearch && matchesStatus && matchesDate && matchesCanal
@@ -178,37 +238,32 @@ const filteredOrders = computed(() => {
 })
 
 const loadOrders = async () => {
+  loading.value = true
   try {
-    const response = await adminService.getOrders()
-    if (response.success) {
-      orders.value = response.orders
-    }
+    const response = await adminService.getOrders(filters.value)
+    orders.value = response.orders || []
   } catch (error) {
-    console.error('Erreur lors du chargement des commandes:', error)
+    console.error('Erreur chargement commandes:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const updateOrderStatus = async (orderId, newStatus) => {
+  try {
+    await adminService.updateOrderStatus(orderId, newStatus)
+  } catch (error) {
+    console.error('Erreur mise à jour statut:', error)
+    await loadOrders()
   }
 }
 
 const viewOrderDetail = async (orderId) => {
   try {
-    const response = await adminService.getOrderDetail(orderId)
-    if (response.success) {
-      selectedOrder.value = response.order
-    }
+    const response = await adminService.getOrder(orderId)
+    selectedOrder.value = response.order
   } catch (error) {
-    console.error('Erreur lors du chargement des détails:', error)
-  }
-}
-
-const updateOrderStatus = async (orderId, status) => {
-  try {
-    const response = await adminService.updateOrderStatus(orderId, status)
-    if (response.success) {
-      // Mettre à jour le statut localement
-      const order = orders.value.find(o => o.id === orderId)
-      if (order) order.status = status
-    }
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour du statut:', error)
+    console.error('Erreur chargement détail commande:', error)
   }
 }
 
@@ -224,6 +279,7 @@ const getStatusClass = (status) => {
 }
 
 const formatDate = (dateString) => {
+  if (!dateString) return '—'
   return new Date(dateString).toLocaleDateString('fr-FR')
 }
 
@@ -269,16 +325,7 @@ watch(filteredOrders, () => {
 })
 
 onMounted(async () => {
-  loading.value = true
-  // Attendre que le DOM soit prêt pour GSAP
-  await nextTick()
-  try {
-    await loadOrders()
-  } catch (err) {
-    console.error('Load error:', err)
-  } finally {
-    loading.value = false
-  }
+  await loadOrders()
   
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
   
@@ -300,7 +347,4 @@ onUnmounted(() => {
 })
 </script>
 <style scoped>
-/* Styles spécifiques si nécessaire */
 </style>
-
-

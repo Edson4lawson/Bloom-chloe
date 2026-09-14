@@ -2,9 +2,9 @@
 /**
  * Authentification utilisateur avec Access Token + Refresh Token
  * 
- * @endpoint POST /api/auth/login.php
- * @body { "email": "string", "password": "string" }
- * @return { "access_token": "string", "refresh_token": "string", "expires_in": int, "user": object }
+ * Endpoint: POST /api/auth/login.php
+ * Body: { "email": "string", "password": "string" }
+ * Response: { "access_token": "string", "refresh_token": "string", "expires_in": int, "user": object }
  */
 
 require_once __DIR__ . '/../config/headers.php';
@@ -19,8 +19,6 @@ loginRateLimit();
 // ⚠️ PROTECTION CAPTCHA: Vérifier si CAPTCHA requis après échecs
 requireCaptcha('login', 0.5);
 
-// Vérifier si la requête est de type POST
-
 // Récupérer les données de la requête
 $data = getJsonData();
 
@@ -34,7 +32,7 @@ $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
 
 try {
-    // Récupérer l'utilisateur par email avec jointure sur roles pour le nom du rôle
+    // Récupérer l'utilisateur par email
     $stmt = $pdo->prepare('
         SELECT u.*, r.name as role_name
         FROM users u
@@ -84,22 +82,28 @@ try {
     $twoFactor = $stmt->fetch();
 
     $requiresTwoFactor = false;
+    $isProduction = ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'development') === 'production';
+    $isLocalhost = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1', 'localhost:8080', '127.0.0.1:8080']);
 
-    // Les admins doivent toujours avoir le 2FA (désactivé en développement)
-    if (in_array($user['role'], ['admin', 'super_admin']) && getenv('APP_ENV') === 'production') {
+    if (in_array($user['role'], ['admin', 'super_admin'])) {
         if (!$twoFactor || !$twoFactor['enabled']) {
-            logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'blocked', '2FA not enabled for admin');
-            sendJsonResponse([
-                'error' => '2FA obligatoire pour les administrateurs. Configurez-le d\'abord.',
-                'require_2fa_setup' => true
-            ], 403);
+            if ($isProduction && !$isLocalhost) {
+                // En production, bloquer si 2FA non configuré
+                logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'blocked', '2FA not enabled for admin');
+                sendJsonResponse([
+                    'error' => '2FA obligatoire pour les administrateurs. Configurez-le d\'abord.',
+                    'require_2fa_setup' => true
+                ], 403);
+            }
+            // En dev local, on skip le 2FA
+            $requiresTwoFactor = false;
+        } else {
+            $requiresTwoFactor = true;
         }
-        $requiresTwoFactor = true;
     } elseif ($twoFactor && $twoFactor['enabled']) {
         // 2FA optionnel pour staff si configuré
         $requiresTwoFactor = true;
     }
-    // Pour les rôles staff (commercial, magasinier, comptable), 2FA non obligatoire
     
     // Si 2FA requis et code non fourni
     if ($requiresTwoFactor && empty($data['two_factor_code'])) {
@@ -183,18 +187,18 @@ try {
         'user' => $userData
     ]);
 
-} catch (Exception $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Erreur générale lors de la connexion: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Une erreur technique est survenue lors de la connexion. Veuillez réessayer dans quelques instants. Si le problème persiste, contactez notre support.'], 500);
 } catch (PDOException $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
     error_log('Erreur lors de la connexion: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Une erreur est survenue lors de l\'authentification. Veuillez réessayer.'], 500);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('Erreur générale lors de la connexion: ' . $e->getMessage());
+    sendJsonResponse(['error' => 'Une erreur inattendue est survenue lors de la connexion.'], 500);
 }
 
 /**
@@ -204,11 +208,11 @@ function logLoginAttempt(PDO $pdo, ?int $userId, string $email, string $ipAddres
     try {
         $stmt = $pdo->prepare('
             INSERT INTO login_logs (user_id, email, ip_address, user_agent, status, failure_reason, created_at) 
-          VALUES (?, ?, ?, ?, ?, ?, NOW())
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
         ');
         $stmt->execute([$userId, $email, $ipAddress, $userAgent, $status, $reason]);
-   } catch (PDOException $e) {
-          error_log('Failed to log login attempt: ' . $e->getMessage());
+    } catch (PDOException $e) {
+        error_log('Failed to log login attempt: ' . $e->getMessage());
     }
 }
 ?>

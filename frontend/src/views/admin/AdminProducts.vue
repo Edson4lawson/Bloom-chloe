@@ -6,13 +6,23 @@
         <h1 class="text-2xl font-bold text-daba-navy dark:text-white">Catalogue Produits</h1>
         <p class="text-sm text-daba-slate dark:text-daba-slate-dark">Gérez vos produits, stocks et promotions</p>
       </div>
-      <button 
-        @click="showCreateForm = true" 
-        class="inline-flex items-center px-4 py-2 bg-daba-orange dark:bg-daba-orange text-white text-sm font-bold rounded-xl hover:bg-daba-navy dark:hover:bg-daba-orange/80 transition-all"
-      >
-        <Plus class="w-4 h-4 mr-2" />
-        Nouveau Produit
-      </button>
+      <div class="flex items-center gap-3">
+        <button 
+          @click="loadProducts" 
+          :disabled="isLoading"
+          class="p-2.5 bg-daba-cream dark:bg-[rgb(43,44,43)] border border-daba-cream-alt dark:border-slate-500 text-daba-slate dark:text-slate-300 rounded-xl hover:bg-daba-cream-alt dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+          title="Actualiser les produits"
+        >
+          <RotateCw class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
+        </button>
+        <button 
+          @click="showCreateForm = true" 
+          class="inline-flex items-center px-4 py-2 bg-daba-orange dark:bg-daba-orange text-white text-sm font-bold rounded-xl hover:bg-daba-navy dark:hover:bg-daba-orange/80 transition-all"
+        >
+          <Plus class="w-4 h-4 mr-2" />
+          Nouveau Produit
+        </button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -48,11 +58,11 @@
     </div>
 
     <!-- Products Table -->
-    <div class="product-table-container bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm border border-daba-cream-alt dark:border-daba-dark-border overflow-hidden transition-colors">
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
-      </div>
-      <div v-else class="overflow-x-auto">
+    <div class="product-table-container bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm border border-daba-cream-alt dark:border-daba-dark-border overflow-hidden transition-colors relative">
+      <!-- Top Loading Bar -->
+      <div v-if="isLoading" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-daba-orange via-daba-navy to-daba-orange animate-pulse z-10"></div>
+
+      <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-100 dark:divide-daba-dark-border">
           <thead class="bg-daba-cream-alt dark:bg-daba-dark-card/50">
             <tr>
@@ -64,7 +74,52 @@
             </tr>
           </thead>
           <tbody class="bg-daba-cream dark:bg-daba-dark-card divide-y divide-slate-100 dark:divide-daba-dark-border">
-            <tr v-for="product in filteredProducts" :key="product.id" class="product-row hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+            <!-- Loading Skeletons -->
+            <tr v-if="isLoading" v-for="n in 6" :key="'skeleton-' + n" class="animate-pulse">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-12 h-12 rounded-xl bg-daba-cream-alt dark:bg-slate-700 flex-shrink-0"></div>
+                  <div class="ml-4 space-y-2">
+                    <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-36"></div>
+                    <div class="h-3 bg-daba-cream-alt dark:bg-slate-800 rounded w-24"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="h-6 bg-daba-cream-alt dark:bg-slate-700 rounded-lg w-24"></div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap space-y-2">
+                <div class="h-4 bg-daba-cream-alt dark:bg-slate-700 rounded w-20"></div>
+                <div class="h-3 bg-daba-cream-alt dark:bg-slate-800 rounded w-16"></div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center justify-center space-x-3">
+                  <div class="w-7 h-7 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                  <div class="w-7 h-7 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                  <div class="w-7 h-7 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  <div class="w-8 h-8 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                  <div class="w-8 h-8 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                  <div class="w-8 h-8 bg-daba-cream-alt dark:bg-slate-700 rounded-lg"></div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr v-else-if="filteredProducts.length === 0">
+              <td colspan="5" class="px-6 py-16 text-center text-daba-slate dark:text-slate-400 text-sm font-medium">
+                <div class="flex flex-col items-center justify-center space-y-2">
+                  <Package class="w-10 h-10 text-daba-slate-dark dark:text-slate-500 stroke-[1.5]" />
+                  <p>Aucun produit ne correspond à votre recherche</p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr v-else v-for="product in filteredProducts" :key="product.id" class="product-row hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="w-12 h-12 rounded-xl bg-daba-cream-alt dark:bg-daba-dark-card flex-shrink-0 overflow-hidden border border-daba-cream-alt dark:border-daba-dark-border">
@@ -82,7 +137,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-bold text-daba-navy dark:text-white">{{ product.price }}FCFA</div>
+                <div class="text-sm font-bold text-daba-navy dark:text-white">{{ product.price }} FCFA</div>
                 <div class="text-xs" :class="product.stock > 10 ? 'text-daba-green dark:text-daba-green' : 'text-rose-600 dark:text-rose-400'">
                   {{ product.stock }} en stock
                 </div>
@@ -98,12 +153,12 @@
                   >
                     <Sparkles class="w-4 h-4" />
                   </button>
-                  <!-- Bestseller -->
+                  <!-- Tendance / Bestseller -->
                   <button 
                     @click="toggleFeature(product, 'bestseller')"
                     class="p-1.5 rounded-lg transition-all"
                     :class="product.is_bestseller ? 'bg-daba-cream-alt text-daba-orange' : 'text-slate-300 hover:text-slate-400'"
-                    :title="product.is_bestseller ? 'Retirer des tops ventes' : 'Marquer comme top vente'"
+                    :title="product.is_bestseller ? 'Retirer des tendances' : 'Marquer comme tendance'"
                   >
                     <TrendingUp class="w-4 h-4" />
                   </button>
@@ -111,8 +166,8 @@
                   <button 
                     @click="toggleFeature(product, 'offer')"
                     class="p-1.5 rounded-lg transition-all"
-                    :class="product.is_special_offer ? 'bg-daba-cream-alt text-rose-600' : 'text-slate-300 hover:text-slate-400'"
-                    :title="product.is_special_offer ? 'Retirer des offres' : 'Marquer comme offre spéciale'"
+                    :class="product.is_special_offer ? 'bg-daba-cream-alt text-daba-green' : 'text-slate-300 hover:text-slate-400'"
+                    :title="product.is_special_offer ? 'Retirer de l\'offre' : 'Mettre en offre spéciale'"
                   >
                     <Gift class="w-4 h-4" />
                   </button>
@@ -120,13 +175,25 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end space-x-2">
-                  <button @click="editProduct(product)" class="p-2 text-slate-400 hover:text-daba-orange hover:bg-daba-cream-alt rounded-lg transition-all" title="Modifier">
-                    <Edit3 class="w-4 h-4" />
-                  </button>
-                  <router-link :to="`/admin/products/${product.id}/images`" class="p-2 text-slate-400 hover:text-daba-orange hover:bg-daba-cream-alt rounded-lg transition-all" title="Images">
+                  <router-link 
+                    :to="`/admin/products/${product.id}/images`"
+                    class="p-2 text-daba-slate hover:text-daba-navy dark:text-daba-slate-dark dark:hover:text-white rounded-lg hover:bg-daba-cream-alt transition-colors"
+                    title="Gérer les images"
+                  >
                     <ImageIcon class="w-4 h-4" />
                   </router-link>
-                  <button @click="deleteProduct(product.id)" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-daba-cream-alt rounded-lg transition-all" title="Supprimer">
+                  <button 
+                    @click="editProduct(product)"
+                    class="p-2 text-daba-slate hover:text-daba-orange rounded-lg hover:bg-daba-cream-alt transition-colors"
+                    title="Modifier"
+                  >
+                    <Edit3 class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="deleteProduct(product.id)"
+                    class="p-2 text-daba-slate hover:text-rose-600 rounded-lg hover:bg-daba-cream-alt transition-colors"
+                    title="Supprimer"
+                  >
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -137,79 +204,108 @@
       </div>
     </div>
 
-    <!-- Create/Edit Modal (A bit simplified for now, redirects to images after) -->
-    <div v-if="showCreateForm || editingProduct" class="fixed inset-0 dark:bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white mt-20 mb-2 dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md md:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 border border-transparent dark:border-daba-dark-border">
-        <!-- Header du formulaire -->
-        <div class="px-8 py-6 border-b border-daba-cream-alt dark:border-daba-dark-border flex items-center justify-between bg-daba-cream-alt/50 dark:bg-daba-dark-card flex-shrink-0">
-          <h2 class="text-xl font-bold text-daba-navy dark:text-white">{{ editingProduct ? 'Éditer le produit' : 'Nouveau produit' }}</h2>
-          <button @click="cancelEdit" class="text-slate-400 hover:text-daba-navy dark:hover:text-white">
-            <X class="w-6 h-6" />
+    <!-- Create/Edit Modal Form -->
+    <div v-if="showCreateForm || editingProduct" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-daba-cream dark:bg-daba-dark-card rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-daba-cream-alt dark:border-daba-dark-border transition-colors">
+        <div class="flex items-center justify-between pb-4 border-b border-daba-cream-alt dark:border-daba-dark-border mb-6">
+          <h2 class="text-xl font-bold text-daba-navy dark:text-white">
+            {{ editingProduct ? 'Modifier le produit' : 'Créer un nouveau produit' }}
+          </h2>
+          <button @click="cancelEdit" class="text-daba-slate hover:text-daba-navy dark:hover:text-white p-1 rounded-lg">
+            <X class="w-5 h-5" />
           </button>
         </div>
-        
-        <!-- Corps du formulaire scrollable -->
-        <div class="overflow-y-auto flex-1 custom-scrollbar">
-          <form @submit.prevent="saveProduct" class="p-8">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Nom du produit</label>
-              <input v-model="productForm.name" @input="generateSlug" required class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 focus:border-daba-orange outline-none dark:text-white">
+
+        <form @submit.prevent="saveProduct" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Nom du produit</label>
+              <input 
+                v-model="productForm.name" 
+                @input="generateSlug"
+                required
+                class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+                placeholder="Ex: Robe d'été fleurie"
+              >
             </div>
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Catégorie</label>
-              <select v-model="productForm.category_id" required class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white">
-                <option value="">Sélectionner...</option>
+            <div>
+              <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Slug (URL)</label>
+              <input 
+                v-model="productForm.slug" 
+                required
+                class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+                placeholder="Ex: robe-ete-fleurie"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Description</label>
+            <textarea 
+              v-model="productForm.description" 
+              rows="3"
+              class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+              placeholder="Description détaillée du produit..."
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Prix (FCFA)</label>
+              <input 
+                v-model="productForm.price" 
+                type="number"
+                step="0.01"
+                required
+                class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+                placeholder="0.00"
+              >
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Stock</label>
+              <input 
+                v-model="productForm.stock" 
+                type="number"
+                required
+                class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+                placeholder="10"
+              >
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase mb-1">Catégorie</label>
+              <select 
+                v-model="productForm.category_id" 
+                required
+                class="w-full px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white"
+              >
+                <option value="">Sélectionner</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Prix (FCFA)</label>
-              <input v-model="productForm.price" type="number" step="0.01" required class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white">
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Stock</label>
-              <input v-model="productForm.stock" type="number" required class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white">
-            </div>
-            <div class="md:col-span-2 space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Slug (URL)</label>
-              <input v-model="productForm.slug" required class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white">
-            </div>
-            <div class="md:col-span-2 space-y-1">
-              <label class="text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase">Description</label>
-              <textarea v-model="productForm.description" rows="3" class="w-full px-4 py-2.5 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-xl focus:ring-2 focus:ring-daba-orange/20 outline-none dark:text-white"></textarea>
-            </div>
           </div>
 
-          <!-- Section Actions - Responsive -->
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-6 mt-8">
-            <label class="flex items-center cursor-pointer self-start sm:self-auto">
-              <div class="relative inline-flex items-center">
-                <input type="checkbox" v-model="productForm.is_active" class="sr-only peer">
-                <div class="w-11 h-6 bg-daba-cream-alt dark:bg-daba-dark-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-daba-green"></div>
-                <span class="ml-3 text-sm font-bold text-slate-600 dark:text-slate-400">Produit Actif</span>
-              </div>
-            </label>
+          <div class="flex items-center space-x-2 pt-2">
+            <input type="checkbox" id="is_active" v-model="productForm.is_active" class="rounded border-gray-300 text-daba-orange focus:ring-daba-orange/20">
+            <label for="is_active" class="text-sm font-medium text-slate-700 dark:text-slate-300">Produit visible dans la boutique</label>
+          </div>
 
-            <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-              <button 
-                type="button" 
-                @click="cancelEdit" 
-                class="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-slate-500 border-1 border-daba-cream-alt dark:border-daba-dark-border hover:cursor-pointer rounded-xl hover:bg-daba-cream-alt dark:hover:bg-daba-dark-card transition-colors duration-75"
-              >
-                Annuler
-              </button>
-              <button 
-                type="submit" 
-                class="w-full sm:w-auto px-8 py-2.5 bg-daba-orange text-white text-sm font-bold rounded-xl hover:bg-daba-orange-dark hover:cursor-pointer transition-all duration-75"
-              >
-                {{ editingProduct ? 'Enregistrer les modifications' : 'Enregistrer' }}
-              </button>
-            </div>
+          <div class="flex items-center justify-end space-x-3 pt-6 border-t border-daba-cream-alt dark:border-daba-dark-border">
+            <button 
+              type="button" 
+              @click="cancelEdit"
+              class="px-4 py-2 text-sm font-bold text-daba-slate hover:text-daba-navy dark:hover:text-white rounded-xl hover:bg-daba-cream-alt transition-colors"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit"
+              class="px-6 py-2 bg-daba-orange text-white text-sm font-bold rounded-xl hover:bg-daba-navy transition-colors"
+            >
+              {{ editingProduct ? 'Mettre à jour' : 'Créer & Ajouter Images' }}
+            </button>
           </div>
         </form>
       </div>
-    </div>
     </div>
   </div>
 </template>
@@ -220,7 +316,7 @@ import { useRouter } from 'vue-router'
 import adminService from '@/services/adminService.js'
 import { 
   Plus, Search, Edit3, Trash2, ImageIcon, X, 
-  Sparkles, TrendingUp, Gift, Check 
+  Sparkles, TrendingUp, Gift, Check, RotateCw, Package
 } from 'lucide-vue-next'
 import { gsap } from 'gsap'
 import { getProductImageUrl } from '@/utils/imageHelper'
@@ -228,10 +324,10 @@ import { getProductImageUrl } from '@/utils/imageHelper'
 const router = useRouter()
 const products = ref([])
 const categories = ref([])
+const isLoading = ref(true)
 const showCreateForm = ref(false)
 const editingProduct = ref(null)
 const filters = ref({ search: '', category: '', status: '', bestsellers: false })
-const loading = ref(true)
 
 const productForm = ref({
   name: '',
@@ -246,7 +342,7 @@ const productForm = ref({
 const filteredProducts = computed(() => {
   return products.value.filter(product => {
     const matchesSearch = !filters.value.search || 
-      product.name.toLowerCase().includes(filters.value.search.toLowerCase())
+      (product.name && product.name.toLowerCase().includes(filters.value.search.toLowerCase()))
     const matchesCategory = !filters.value.category || 
       product.category_id == filters.value.category
     const matchesStatus = !filters.value.status || 
@@ -258,10 +354,15 @@ const filteredProducts = computed(() => {
 })
 
 const loadProducts = async () => {
+  isLoading.value = true
   try {
     const response = await adminService.getProducts({ per_page: 200 })
     if (response.success) products.value = response.products
-  } catch (err) { console.error(err) }
+  } catch (err) { 
+    console.error(err) 
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const loadCategories = async () => {
@@ -320,7 +421,6 @@ const saveProduct = async () => {
       await loadProducts()
       const pid = editingProduct.value ? editingProduct.value.id : response.product_id
       if (!editingProduct.value) {
-        // Redirection vers la gestion des images pour un nouveau produit
         router.push(`/admin/products/${pid}/images`)
       }
       cancelEdit()
@@ -371,23 +471,17 @@ watch(filteredProducts, () => {
 })
 
 onMounted(async () => {
-  loading.value = true
-  // Attendre que le DOM soit complètement rendu pour éviter les erreurs GSAP "target not found"
   await nextTick()
   
   try {
-    // Charger les produits et catégories en parallèle pour éviter les blocages
     await Promise.all([
       loadProducts(),
       loadCategories()
     ])
   } catch (err) {
     console.error('Load error:', err)
-  } finally {
-    loading.value = false
   }
   
-  // Initial Entrance Animation
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
   
   if (document.querySelector('.product-header')) {
@@ -400,7 +494,6 @@ onMounted(async () => {
     tl.from('.product-table-container', { y: 30, opacity: 0, duration: 0.8 }, '-=0.4')
   }
   
-  // Trigger row animation
   animateTableRows()
 })
 
@@ -424,5 +517,3 @@ onUnmounted(() => {
   background: #475569;
 }
 </style>
-
-

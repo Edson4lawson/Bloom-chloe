@@ -6,12 +6,9 @@
  * Usage: php seed_products.php
  */
 
-require_once __DIR__ . '/api/config/db.php';
+require_once __DIR__ . '/../config/db.php';
 
 echo "=== BLOOM-CHLOE — Seed des Produits ===\n\n";
-
-// db.php crée directement $pdo
-require_once __DIR__ . '/api/config/db.php';
 
 if (!isset($pdo)) {
     die("[ERREUR] Impossible de se connecter à la base de données\n");
@@ -203,7 +200,7 @@ $products = [
 echo "=== Insertion de " . count($products) . " produits ===\n\n";
 
 $insertStmt = $db->prepare("INSERT INTO products (category_id, name, slug, description, price, stock, stock_quantity, image_url, rating, source, status) 
-    VALUES (:cat_id, :name, :slug, :desc, :price, :stock, :stock, :image, :rating, 'produit', 'published')
+    VALUES (:cat_id, :name, :slug, :desc, :price, :stock, :stock_qty, :image, :rating, 'produit', 'published')
     ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description), price=VALUES(price), image_url=VALUES(image_url)");
 
 $inserted = 0;
@@ -235,6 +232,7 @@ foreach ($products as $p) {
             ':desc' => $p['desc'],
             ':price' => $p['price'],
             ':stock' => $stock,
+            ':stock_qty' => $stock,
             ':image' => $imageUrl,
             ':rating' => $rating
         ]);

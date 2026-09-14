@@ -3,9 +3,9 @@
  * Endpoint de rafraîchissement des tokens
  * Permet de renouveler l'access token expiré avec un refresh token valide
  * 
- * @endpoint POST /api/auth/refresh.php
- * @body { "refresh_token": "string" }
- * @return { "access_token": "string", "refresh_token": "string", "expires_in": int }
+ * Endpoint: POST /api/auth/refresh.php
+ * Body: { "refresh_token": "string" }
+ * Response: { "access_token": "string", "refresh_token": "string", "expires_in": int }
  */
 
 require_once __DIR__ . '/../config/headers.php';
