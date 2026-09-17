@@ -97,9 +97,9 @@ try {
     // Hacher le mot de passe
     $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
-    // Générer l'Access Token (15 minutes)
+    // Générer l'Access Token (30 jours)
     $accessToken = bin2hex(random_bytes(32));
-    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
 
     // Générer le Refresh Token (30 jours)
     $refreshToken = bin2hex(random_bytes(64));
@@ -192,7 +192,7 @@ try {
         'access_token' => $accessToken,
         'refresh_token' => $refreshToken,
         'token_type' => 'Bearer',
-        'expires_in' => 900,
+        'expires_in' => 2592000,
         'user' => $userData
     ], 201);
 

@@ -21,7 +21,7 @@ $data = getJsonData();
 
 // Valider les données d'entrée
 if (empty($data['email']) || empty($data['password'])) {
-    sendJsonResponse(['error' => 'Email et mot de passe requis'], 400);
+    sendJsonResponse(['error' => 'Email et mot de passe requis.'], 400);
 }
 
 $email = strtolower(trim($data['email']));
@@ -34,44 +34,39 @@ try {
         SELECT u.*, r.name as role_name
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
-        WHERE u.email = ?
+        WHERE LOWER(TRIM(u.email)) = ?
     ');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
     // Vérifier si le compte est verrouillé
-    if ($user && isset($user['locked_until']) && $user['locked_until'] > date('Y-m-d H:i:s')) {
-        logLoginAttempt($pdo, $user['id'] ?? null, $email, $ipAddress, $userAgent, 'blocked', 'Account locked');
+    if ($user && isset($user['locked_until']) && !empty($user['locked_until']) && $user['locked_until'] > date('Y-m-d H:i:s')) {
         sendJsonResponse(['error' => 'Compte temporairement verrouillé. Réessayez plus tard.'], 423);
     }
     
     // Vérifier si l'utilisateur existe et si le mot de passe est correct
     if (!$user || !password_verify($data['password'], $user['password'])) {
-        // Incrémenter les tentatives échouées
+        // Incrémenter les tentatives échouées de manière sécurisée
         if ($user) {
-            $attempts = ($user['failed_login_attempts'] ?? 0) + 1;
-            $lockUntil = $attempts >= 5 ? date('Y-m-d H:i:s', strtotime('+15 minutes')) : null;
-            
             try {
-                $stmt = $pdo->prepare('UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?');
-                $stmt->execute([$attempts, $lockUntil, $user['id']]);
+                $attempts = (int)($user['failed_login_attempts'] ?? 0) + 1;
+                $lockUntil = $attempts >= 5 ? date('Y-m-d H:i:s', strtotime('+15 minutes')) : null;
+                $updateStmt = $pdo->prepare('UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?');
+                $updateStmt->execute([$attempts, $lockUntil, $user['id']]);
             } catch (Exception $e) {}
         }
         
-        logLoginAttempt($pdo, $user['id'] ?? null, $email, $ipAddress, $userAgent, 'failed', 'Invalid credentials');
-        
-        $errorMessage = 'Email ou mot de passe incorrect.';
         sendJsonResponse([
-            'error' => $errorMessage
+            'error' => 'Email ou mot de passe incorrect.'
         ], 401);
     }
     
     // Vérifier si le 2FA est configuré et actif
     $requiresTwoFactor = false;
     try {
-        $stmt = $pdo->prepare('SELECT enabled FROM two_factor_auth WHERE user_id = ?');
-        $stmt->execute([$user['id']]);
-        $twoFactor = $stmt->fetch();
+        $stmt2fa = $pdo->prepare('SELECT enabled FROM two_factor_auth WHERE user_id = ?');
+        $stmt2fa->execute([$user['id']]);
+        $twoFactor = $stmt2fa->fetch();
         if ($twoFactor && !empty($twoFactor['enabled'])) {
             $requiresTwoFactor = true;
         }
@@ -93,29 +88,20 @@ try {
     // Si 2FA requis et code fourni, le vérifier
     if ($requiresTwoFactor && !empty($data['two_factor_code'])) {
         if (!validateTwoFactorCode($user['id'], $data['two_factor_code'])) {
-            logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'failed', 'Invalid 2FA code');
             sendJsonResponse(['error' => 'Le code de double authentification est incorrect.'], 401);
         }
     }
     
-    $pdo->beginTransaction();
-    
-    // Réinitialiser les tentatives échouées
-    try {
-        $stmt = $pdo->prepare('UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login_at = NOW(), last_login_ip = ? WHERE id = ?');
-        $stmt->execute([$ipAddress, $user['id']]);
-    } catch (Exception $e) {}
-    
-    // Générer l'Access Token (15 minutes)
+    // Générer l'Access Token (30 jours de validité pour éviter les déconnexions intempestives)
     $accessToken = bin2hex(random_bytes(32));
-    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
     
-    $stmt = $pdo->prepare('UPDATE users SET token = ?, token_expires_at = ? WHERE id = ?');
-    $stmt->execute([$accessToken, $accessExpiresAt, $user['id']]);
+    $updateStmt = $pdo->prepare('UPDATE users SET token = ?, token_expires_at = ? WHERE id = ?');
+    $updateStmt->execute([$accessToken, $accessExpiresAt, $user['id']]);
     
-    // Générer le Refresh Token (30 jours)
+    // Générer le Refresh Token (60 jours)
     $refreshToken = bin2hex(random_bytes(64));
-    $refreshExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $refreshExpiresAt = date('Y-m-d H:i:s', strtotime('+60 days'));
     
     try {
         $stmt = $pdo->prepare('
@@ -124,15 +110,22 @@ try {
         ');
         $stmt->execute([$user['id'], $refreshToken, $refreshExpiresAt, $ipAddress, $userAgent]);
     } catch (Exception $e) {
-        error_log('Warning refresh token insert: ' . $e->getMessage());
+        error_log('Notice refresh token insert: ' . $e->getMessage());
     }
+
+    // Réinitialiser les tentatives échouées
+    try {
+        $resetStmt = $pdo->prepare('UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login_at = NOW(), last_login_ip = ? WHERE id = ?');
+        $resetStmt->execute([$ipAddress, $user['id']]);
+    } catch (Exception $e) {}
+
+    // Logger la tentative réussie
+    try {
+        $logStmt = $pdo->prepare('INSERT INTO login_logs (user_id, email, ip_address, user_agent, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())');
+        $logStmt->execute([$user['id'], $email, $ipAddress, $userAgent, 'success']);
+    } catch (Exception $e) {}
     
-    $pdo->commit();
-    
-    // Logger la connexion réussie
-    logLoginAttempt($pdo, $user['id'], $email, $ipAddress, $userAgent, 'success', null);
-    
-    // Préparer les données utilisateur (rôle prioritaire role_name sinon role)
+    // Préparer les données utilisateur
     $effectiveRole = $user['role_name'] ?? $user['role'] ?? 'customer';
     
     $userData = [
@@ -145,41 +138,20 @@ try {
         'role' => $effectiveRole
     ];
     
-    // Retourner les tokens
+    // Retourner les tokens et l'utilisateur
     sendJsonResponse([
         'message' => 'Connexion réussie',
         'access_token' => $accessToken,
         'refresh_token' => $refreshToken,
         'token_type' => 'Bearer',
-        'expires_in' => 900,
+        'expires_in' => 2592000, // 30 jours
         'user' => $userData
     ]);
 
 } catch (PDOException $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     error_log('BLOOM ERROR [Login]: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    sendJsonResponse(['error' => 'Une erreur est survenue lors de l\'authentification.'], 500);
+    sendJsonResponse(['error' => 'Une erreur est survenue lors de l\'authentification : ' . $e->getMessage()], 500);
 } catch (Exception $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     error_log('BLOOM ERROR [Login General]: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Une erreur inattendue est survenue lors de la connexion.'], 500);
-}
-
-/**
- * Log une tentative de connexion
- */
-function logLoginAttempt(PDO $pdo, ?int $userId, string $email, string $ipAddress, string $userAgent, string $status, ?string $reason): void {
-    try {
-        $stmt = $pdo->prepare('
-            INSERT INTO login_logs (user_id, email, ip_address, user_agent, status, failure_reason, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        ');
-        $stmt->execute([$userId, $email, $ipAddress, $userAgent, $status, $reason]);
-    } catch (Exception $e) {
-        // Silencieux si la table n'existe pas
-    }
+    sendJsonResponse(['error' => 'Une erreur inattendue est survenue.'], 500);
 }
