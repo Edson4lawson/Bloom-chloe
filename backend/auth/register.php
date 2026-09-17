@@ -13,11 +13,11 @@ require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/rate_limit.php';
 
 // ⚠️ PROTECTION: Limite d'inscriptions
-rateLimit('public_register', 15, 300);
+rateLimit('public_register', 20, 300);
 
 // Vérifier si la requête est de type POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendJsonResponse(['error' => 'Méthode non autorisée'], 405);
+    sendJsonResponse(['error' => 'Méthode non autorisée. Utilisez POST pour vous inscrire.'], 405);
 }
 
 // Récupérer les données de la requête
@@ -67,11 +67,10 @@ try {
             $roleId = (int)$roleRow['id'];
         }
     } catch (Exception $e) {
-        // En cas d'absence de la table roles
         $roleId = null;
     }
 
-    // Si un admin authentifié souhaite créer un compte staff / spécifique
+    // Si un admin authentifié souhaite créer un compte avec un rôle spécifique
     $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     if (!empty($authHeader) && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
         $adminToken = $matches[1];
@@ -98,17 +97,23 @@ try {
     // Hacher le mot de passe
     $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
+    // Générer l'Access Token (15 minutes)
+    $accessToken = bin2hex(random_bytes(32));
+    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+    // Générer le Refresh Token (30 jours)
+    $refreshToken = bin2hex(random_bytes(64));
+    $refreshExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+
     $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
-
-    $pdo->beginTransaction();
 
     $isPgsql = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql');
 
     if ($isPgsql) {
         $stmt = $pdo->prepare('
-            INSERT INTO users (email, password, first_name, last_name, address, phone, role, role_id, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW()) 
+            INSERT INTO users (email, password, first_name, last_name, address, phone, role, role_id, token, token_expires_at, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) 
             RETURNING id
         ');
         $stmt->execute([
@@ -119,13 +124,15 @@ try {
             $data['address'] ?? null,
             $data['phone'] ?? null,
             $roleName === 'admin' ? 'admin' : 'customer',
-            $roleId
+            $roleId,
+            $accessToken,
+            $accessExpiresAt
         ]);
         $userId = (int)$stmt->fetchColumn();
     } else {
         $stmt = $pdo->prepare('
-            INSERT INTO users (email, password, first_name, last_name, address, phone, role, role_id, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO users (email, password, first_name, last_name, address, phone, role, role_id, token, token_expires_at, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ');
         $stmt->execute([
             $email,
@@ -135,22 +142,14 @@ try {
             $data['address'] ?? null,
             $data['phone'] ?? null,
             $roleName === 'admin' ? 'admin' : 'customer',
-            $roleId
+            $roleId,
+            $accessToken,
+            $accessExpiresAt
         ]);
         $userId = (int)$pdo->lastInsertId();
     }
 
-    // Générer l'Access Token (15 minutes)
-    $accessToken = bin2hex(random_bytes(32));
-    $accessExpiresAt = date('Y-m-d H:i:s', strtotime('+15 minutes'));
-
-    $stmt = $pdo->prepare('UPDATE users SET token = ?, token_expires_at = ? WHERE id = ?');
-    $stmt->execute([$accessToken, $accessExpiresAt, $userId]);
-
-    // Générer le Refresh Token (30 jours)
-    $refreshToken = bin2hex(random_bytes(64));
-    $refreshExpiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
-
+    // Enregistrer le refresh token de manière indépendante
     try {
         $stmt = $pdo->prepare('
             INSERT INTO refresh_tokens (user_id, token, expires_at, ip_address, user_agent, created_at) 
@@ -158,10 +157,10 @@ try {
         ');
         $stmt->execute([$userId, $refreshToken, $refreshExpiresAt, $ipAddress, $userAgent]);
     } catch (Exception $e) {
-        error_log('Warning refresh_tokens insert: ' . $e->getMessage());
+        error_log('Notice: could not insert into refresh_tokens: ' . $e->getMessage());
     }
 
-    // Générer un token de vérification email
+    // Enregistrer le token de vérification email
     try {
         $emailVerifyToken = bin2hex(random_bytes(32));
         $emailVerifyExpires = date('Y-m-d H:i:s', strtotime('+24 hours'));
@@ -172,10 +171,8 @@ try {
         ');
         $stmt->execute([$userId, $emailVerifyToken, $emailVerifyExpires]);
     } catch (Exception $e) {
-        error_log('Warning email_verifications insert: ' . $e->getMessage());
+        error_log('Notice: could not insert into email_verifications: ' . $e->getMessage());
     }
-
-    $pdo->commit();
 
     // Préparer les données utilisateur
     $userData = [
@@ -200,15 +197,9 @@ try {
     ], 201);
 
 } catch (PDOException $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     error_log('BLOOM ERROR [Register]: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     sendJsonResponse(['error' => 'Une erreur est survenue lors de la création de votre compte : ' . $e->getMessage()], 500);
 } catch (Exception $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
     error_log('BLOOM ERROR [Register General]: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Une erreur inattendue est survenue.'], 500);
 }
