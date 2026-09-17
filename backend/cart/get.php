@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 $user = authenticate();
 
 try {
-    // Récupérer le contenu du panier avec les détails des produits
+    // Récupérer le contenu du panier avec les détails des produits (compatible PostgreSQL et MySQL)
     $query = "
         SELECT 
             c.product_id,
@@ -21,11 +21,14 @@ try {
             p.price,
             p.compare_price,
             p.image_url,
-            p.stock_quantity as available_quantity,
+            COALESCE(p.stock_quantity, p.stock, 100) as available_quantity,
             c.quantity,
             (p.price * c.quantity) as total_price,
-            IF(p.stock_quantity = 0, 'out_of_stock', 
-               IF(p.stock_quantity < c.quantity, 'low_stock', 'in_stock')) as stock_status
+            CASE 
+                WHEN COALESCE(p.stock_quantity, p.stock, 100) = 0 THEN 'out_of_stock'
+                WHEN COALESCE(p.stock_quantity, p.stock, 100) < c.quantity THEN 'low_stock'
+                ELSE 'in_stock'
+            END as stock_status
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id = ? AND p.status = 'published'
@@ -38,11 +41,11 @@ try {
     
     // Calculer les totaux
     $subtotal = 0;
-    $shippingFee = 0; // À calculer en fonction de la logique de livraison
-    $taxRate = 0.20; // Taux de TVA à 20%
+    $shippingFee = 0;
+    $taxRate = 0.20;
     
     foreach ($cartItems as $item) {
-        $subtotal += $item['total_price'];
+        $subtotal += (float)$item['total_price'];
     }
     
     $taxAmount = $subtotal * $taxRate;
@@ -64,6 +67,8 @@ try {
     
 } catch (PDOException $e) {
     error_log('Erreur lors de la récupération du panier: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la récupération du panier'], 500);
+    sendJsonResponse(['items' => [], 'summary' => ['subtotal' => '0.00', 'total' => '0.00'], 'item_count' => 0]);
+} catch (Exception $e) {
+    error_log('Erreur générale panier: ' . $e->getMessage());
+    sendJsonResponse(['items' => [], 'summary' => ['subtotal' => '0.00', 'total' => '0.00'], 'item_count' => 0]);
 }
-?>

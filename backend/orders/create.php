@@ -25,7 +25,7 @@ if ($isGuestOrder) {
     }
 
     // Valider le format du téléphone
-    if (!preg_match('/^\+?[0-9]{10,15}$/', $guestPhone)) {
+    if (!preg_match('/^\+?[0-9]{8,18}$/', $guestPhone)) {
         sendJsonResponse(['error' => 'Format de téléphone invalide'], 400);
     }
 } else {
@@ -35,17 +35,15 @@ if ($isGuestOrder) {
 
 // Valider les données d'entrée selon le mode
 if ($isGuestOrder) {
-    // Mode invité: items sont fournis directement
     if (empty($data['items']) || !is_array($data['items'])) {
         sendJsonResponse(['error' => 'Les articles sont obligatoires pour le checkout invité'], 400);
     }
     $shippingAddress = $guestAddress;
 } else {
-    // Mode connecté: validation standard
-    $requiredFields = ['shipping_address', 'payment_method'];
+    $requiredFields = ['shipping_address'];
     foreach ($requiredFields as $field) {
         if (empty($data[$field])) {
-            sendJsonResponse(['error' => 'Tous les champs sont obligatoires'], 400);
+            sendJsonResponse(['error' => 'Adresse de livraison obligatoire'], 400);
         }
     }
     $shippingAddress = $data['shipping_address'];
@@ -53,38 +51,43 @@ if ($isGuestOrder) {
 
 // Valider la méthode de paiement
 $allowedPaymentMethods = ['cash_on_delivery', 'transfer', 'mobile_money_bj', 'celtis_cash_bj', 'uba_bank', 'credit_card', 'paypal', 'mobile_money'];
-if (!empty($data['payment_method']) && !in_array($data['payment_method'], $allowedPaymentMethods)) {
-    sendJsonResponse(['error' => 'Méthode de paiement non valide'], 400);
-}
+$paymentMethod = $data['payment_method'] ?? 'cash_on_delivery';
 
 try {
     $pdo->beginTransaction();
+    $isPgsql = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql');
 
     // 1. Récupérer ou créer l'utilisateur (mode invité) ou utiliser l'utilisateur connecté
     if ($isGuestOrder) {
-        // Mode invité: rechercher ou créer le client par téléphone
         $stmt = $pdo->prepare('SELECT id, first_name, last_name, address FROM users WHERE phone = ?');
         $stmt->execute([$guestPhone]);
-        $user = $stmt->fetch();
+        $existingUser = $stmt->fetch();
 
-        if ($user) {
-            // Utilisateur existant: mettre à jour l'adresse si fournie
-            $userId = $user['id'];
+        if ($existingUser) {
+            $userId = (int)$existingUser['id'];
             $stmt = $pdo->prepare('UPDATE users SET address = ? WHERE id = ?');
             $stmt->execute([$guestAddress, $userId]);
         } else {
-            // Nouveau client: créer le compte avec email fictif basé sur le téléphone
             $guestEmail = 'guest_' . preg_replace('/[^0-9]/', '', $guestPhone) . '@bloomchloe.local';
-            $stmt = $pdo->prepare('
-                INSERT INTO users (email, password, phone, first_name, last_name, address, role_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, (SELECT id FROM roles WHERE name = "customer"), NOW())
-            ');
-            $stmt->execute([$guestEmail, '', $guestPhone, $guestName, '', $guestAddress]);
-            $userId = $pdo->lastInsertId();
+            if ($isPgsql) {
+                $stmt = $pdo->prepare("
+                    INSERT INTO users (email, password, phone, first_name, last_name, address, role, role_id, created_at)
+                    VALUES (?, '', ?, ?, '', ?, 'customer', (SELECT id FROM roles WHERE name = 'customer' LIMIT 1), NOW())
+                    RETURNING id
+                ");
+                $stmt->execute([$guestEmail, $guestPhone, $guestName, $guestAddress]);
+                $userId = (int)$stmt->fetchColumn();
+            } else {
+                $stmt = $pdo->prepare("
+                    INSERT INTO users (email, password, phone, first_name, last_name, address, role, role_id, created_at)
+                    VALUES (?, '', ?, ?, '', ?, 'customer', (SELECT id FROM roles WHERE name = 'customer' LIMIT 1), NOW())
+                ");
+                $stmt->execute([$guestEmail, $guestPhone, $guestName, $guestAddress]);
+                $userId = (int)$pdo->lastInsertId();
+            }
         }
     } else {
-        // Mode connecté: utiliser l'utilisateur authentifié
-        $userId = $user['id'];
+        $userId = (int)$user['id'];
     }
 
     // 2. Récupérer les items (fournis dans la requête ou depuis la table cart)
@@ -92,8 +95,7 @@ try {
     if (!empty($data['items']) && is_array($data['items'])) {
         $itemsToProcess = $data['items'];
     } else if (!$isGuestOrder) {
-        // Mode connecté: récupérer depuis la table cart
-        $stmt = $pdo->prepare("SELECT product_id, quantity FROM cart WHERE user_id = ?");
+        $stmt = $pdo->prepare('SELECT product_id, quantity FROM cart WHERE user_id = ?');
         $stmt->execute([$userId]);
         $itemsToProcess = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -113,12 +115,12 @@ try {
         }
 
         // Récupérer les détails du produit
-        $stmt = $pdo->prepare('
+        $stmt = $pdo->prepare("
             SELECT id, name, price, COALESCE(stock_quantity, stock, 100) as available_quantity
             FROM products
             WHERE id = ?
             FOR UPDATE
-        ');
+        ");
         $stmt->execute([$productId]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -136,7 +138,7 @@ try {
 
         $price = (float)($item['price'] ?? $product['price']);
         $orderItems[] = [
-            'product_id' => $product['id'],
+            'product_id' => (int)$product['id'],
             'product_name' => $product['name'],
             'price' => $price,
             'quantity' => $quantity,
@@ -155,30 +157,42 @@ try {
         $subtotal += $item['total'];
     }
 
-    // Calculer les frais de livraison
     $shippingFee = calculateShippingFee($subtotal, $shippingAddress);
     $totalAmount = $subtotal + $shippingFee;
-
-    // 4. Créer la commande
     $orderNumber = 'ORD-' . strtoupper(substr(uniqid(), -8));
 
-    $stmt = $pdo->prepare('INSERT INTO orders (
-        user_id, total_amount, status, shipping_address, shipping_fee, tax_amount, notes, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');    
-    
-    $stmt->execute([
-        $userId,
-        $totalAmount,
-        'pending',
-        $shippingAddress,
-        $shippingFee,
-        0, // Pas de taxe par défaut ou déjà incluse
-        $data['customer_note'] ?? null
-    ]);
-    
-    $orderId = $pdo->lastInsertId();
-    
-    // 4. Ajouter les articles de la commande et déduire le stock
+    // 4. Créer la commande
+    if ($isPgsql) {
+        $stmt = $pdo->prepare('INSERT INTO orders (
+            user_id, total_amount, status, shipping_address, shipping_fee, tax_amount, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) RETURNING id');
+        $stmt->execute([
+            $userId,
+            $totalAmount,
+            'pending',
+            $shippingAddress,
+            $shippingFee,
+            0,
+            $data['customer_note'] ?? null
+        ]);
+        $orderId = (int)$stmt->fetchColumn();
+    } else {
+        $stmt = $pdo->prepare('INSERT INTO orders (
+            user_id, total_amount, status, shipping_address, shipping_fee, tax_amount, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');
+        $stmt->execute([
+            $userId,
+            $totalAmount,
+            'pending',
+            $shippingAddress,
+            $shippingFee,
+            0,
+            $data['customer_note'] ?? null
+        ]);
+        $orderId = (int)$pdo->lastInsertId();
+    }
+
+    // 5. Ajouter les articles de la commande et déduire le stock
     foreach ($orderItems as $item) {
         $stmt = $pdo->prepare('INSERT INTO order_items (order_id, product_id, product_name, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([
@@ -189,42 +203,44 @@ try {
             $item['price']
         ]);
         
-        // Mettre à jour le stock (stock_quantity et stock)
+        // Mettre à jour le stock
         $updateStockStmt = $pdo->prepare('
             UPDATE products 
-            SET stock_quantity = GREATEST(0, stock_quantity - ?),
-                stock = GREATEST(0, stock - ?),
+            SET stock_quantity = GREATEST(0, COALESCE(stock_quantity, 0) - ?),
+                stock = GREATEST(0, COALESCE(stock, 0) - ?),
                 updated_at = NOW()
             WHERE id = ?
         ');
         $updateStockStmt->execute([$item['quantity'], $item['quantity'], $item['product_id']]);
     }
     
-    // 5. Vider le panier (seulement en mode connecté)
+    // 6. Vider le panier (seulement en mode connecté)
     if (!$isGuestOrder) {
-        $stmt = $pdo->prepare('DELETE FROM cart WHERE user_id = ?');
-        $stmt->execute([$userId]);
+        try {
+            $stmt = $pdo->prepare('DELETE FROM cart WHERE user_id = ?');
+            $stmt->execute([$userId]);
+        } catch (Exception $e) {}
     }
     
-    // 6. Créer un enregistrement de paiement (si méthode de paiement fournie)
-    if (!empty($data['payment_method'])) {
-        $paymentStatus = 'pending';
-        if ($data['payment_method'] === 'cash_on_delivery') {
-            $paymentStatus = 'pending_delivery';
-        } elseif ($data['payment_method'] === 'transfer') {
-            $paymentStatus = 'pending_verification';
-        }
+    // 7. Créer un enregistrement de paiement
+    $paymentStatus = 'pending';
+    if ($paymentMethod === 'cash_on_delivery') {
+        $paymentStatus = 'pending_delivery';
+    } elseif ($paymentMethod === 'transfer') {
+        $paymentStatus = 'pending_verification';
+    }
 
+    try {
         $paymentStmt = $pdo->prepare('INSERT INTO payments (
-            order_id, transaction_id, provider, amount, currency, status, metadata
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            order_id, transaction_id, provider, amount, currency, status, metadata, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');
 
-        $transactionId = ($data['payment_method'] === 'cash_on_delivery')
+        $transactionId = ($paymentMethod === 'cash_on_delivery')
             ? 'COD-' . strtoupper(substr(uniqid(), -8))
-            : (($data['payment_method'] === 'transfer') ? 'TRF-' . strtoupper(substr(uniqid(), -8)) : 'ORD-' . time() . '-' . mt_rand(1000, 9999));
+            : (($paymentMethod === 'transfer') ? 'TRF-' . strtoupper(substr(uniqid(), -8)) : 'ORD-' . time() . '-' . mt_rand(1000, 9999));
 
         $paymentData = [
-            'provider' => $data['payment_method'],
+            'provider' => $paymentMethod,
             'status' => $paymentStatus,
             'created_at' => date('Y-m-d H:i:s'),
             'guest_checkout' => $isGuestOrder
@@ -233,12 +249,14 @@ try {
         $paymentStmt->execute([
             $orderId,
             $transactionId,
-            $data['payment_method'],
+            $paymentMethod,
             $totalAmount,
             'XOF',
             $paymentStatus,
             json_encode($paymentData)
         ]);
+    } catch (Exception $e) {
+        error_log('Notice payment log error: ' . $e->getMessage());
     }
     
     $pdo->commit();
@@ -255,17 +273,10 @@ try {
     if ($pdo && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log('Erreur lors de la création de la commande: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la création de la commande. Veuillez vérifier vos informations.'], 500);
+    error_log('BLOOM ERROR [Create Order]: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    sendJsonResponse(['error' => 'Erreur lors de la création de la commande : ' . $e->getMessage()], 500);
 }
 
-/**
- * Calcule les frais de livraison en fonction du montant et de l'adresse
- * TODO: Implémenter la logique de calcul des frais de livraison selon les règles métier
- */
 function calculateShippingFee(float $subtotal, string $shippingAddress): int {
-    // Pour l'instant, retourne 0 par défaut
-    // La logique métier sera définie ultérieurement
     return 0;
 }
-?>

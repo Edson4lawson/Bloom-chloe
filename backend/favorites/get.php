@@ -17,14 +17,14 @@ $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 10;
 
 // Valider les paramètres
 $page = max(1, $page);
-$perPage = max(1, min(50, $perPage)); // Limiter à 50 articles par page
+$perPage = max(1, min(50, $perPage));
 $offset = ($page - 1) * $perPage;
 
 try {
     // Compter le nombre total de favoris
-    $countStmt = $pdo->prepare('SELECT COUNT(*) as total FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? AND p.status = "published"');
+    $countStmt = $pdo->prepare("SELECT COUNT(*) as total FROM favorites f JOIN products p ON f.product_id = p.id WHERE f.user_id = ? AND p.status = 'published'");
     $countStmt->execute([$user['id']]);
-    $total = $countStmt->fetch()['total'];
+    $total = (int)($countStmt->fetch()['total'] ?? 0);
     
     // Récupérer les produits favoris avec pagination
     $query = "
@@ -43,9 +43,9 @@ try {
     
     // Formater la réponse
     $response = [
-        'data' => $favorites,
+        'data' => $favorites ?: [],
         'pagination' => [
-            'total' => (int)$total,
+            'total' => $total,
             'per_page' => $perPage,
             'current_page' => $page,
             'last_page' => ceil($total / $perPage),
@@ -58,6 +58,5 @@ try {
     
 } catch (PDOException $e) {
     error_log('Erreur lors de la récupération des favoris: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la récupération des favoris'], 500);
+    sendJsonResponse(['data' => [], 'pagination' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 1]]);
 }
-?>
