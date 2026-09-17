@@ -25,7 +25,7 @@ try {
     // Requête de base
     $sql = "
         SELECT p.id, p.name, p.slug, p.description, p.price, p.stock_quantity as stock,
-               p.unit, p.image_url, p.source, p.status, p.created_at, p.updated_at,
+               p.image_url, p.source, p.status, p.created_at, p.updated_at,
                p.is_featured, p.is_newest, p.is_bestseller, p.is_special_offer,
                c.name as category_name, p.category_id 
         FROM products p 

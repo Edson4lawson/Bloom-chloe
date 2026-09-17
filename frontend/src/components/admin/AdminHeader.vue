@@ -1,18 +1,18 @@
-﻿<template>
-  <header class="h-16 bg-daba-cream dark:bg-daba-dark-card border-b border-daba-cream-alt dark:border-daba-dark-border flex items-center justify-between px-8 shadow-sm">
+<template>
+  <header class="h-16 bg-white dark:bg-bloom-dark-card border-b border-purple-100/60 dark:border-bloom-dark-border flex items-center justify-between px-8 shadow-sm">
     <div class="flex items-center gap-4">
-      <button @click="$emit('toggle-sidebar')" class="lg:hidden p-2 text-daba-slate hover:text-daba-navy dark:hover:text-white rounded-lg hover:bg-daba-cream-alt dark:hover:bg-slate-800 transition-colors">
+      <button @click="$emit('toggle-sidebar')" class="lg:hidden p-2 text-gray-500 hover:text-gray-800 dark:hover:text-white rounded-lg hover:bg-purple-50 dark:hover:bg-slate-800 transition-colors">
         <Menu class="w-5 h-5" />
       </button>
-      <h2 class="text-lg font-black text-daba-navy dark:text-white tracking-tight">{{ pageTitle }}</h2>
+      <h2 class="text-lg font-black text-gray-900 dark:text-white tracking-tight">{{ pageTitle }}</h2>
     </div>
     <div class="flex items-center gap-4">
       <ThemeToggle />
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full bg-daba-orange flex items-center justify-center text-white text-xs font-bold">
+        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
           {{ initials }}
         </div>
-        <span class="hidden sm:block text-sm font-bold text-daba-slate dark:text-daba-slate-dark">{{ userName }}</span>
+        <span class="hidden sm:block text-sm font-bold text-gray-700 dark:text-gray-300">{{ userName }}</span>
       </div>
     </div>
   </header>
@@ -32,12 +32,14 @@ const pageTitle = computed(() => {
   const titles = {
     'AdminDashboard': 'Dashboard',
     'AdminProducts': 'Produits',
+    'AdminStock': 'Stock',
     'AdminOrders': 'Commandes',
     'AdminCustomers': 'Clients',
+    'AdminInvoices': 'Factures',
     'AdminAnalytics': 'Analytiques',
     'AdminSettings': 'Paramètres'
   }
-  return titles[route.name] || 'Daba'
+  return titles[route.name] || 'Bloom Chloé'
 })
 
 const userName = computed(() => {
@@ -52,4 +54,3 @@ const initials = computed(() => {
   return 'A'
 })
 </script>
-

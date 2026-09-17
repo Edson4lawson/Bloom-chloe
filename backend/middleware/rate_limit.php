@@ -1,6 +1,6 @@
 <?php
 /**
- * Middleware de Rate Limiting Avancé pour Daba
+ * Middleware de Rate Limiting Avancé pour Bloom Chloé
  * Protège contre les attaques brute-force et DDoS applicatif
  *
  * @author Security Audit
@@ -24,7 +24,7 @@ function rateLimit(string $endpoint, int $maxAttempts = 60, int $windowSeconds =
     $key = "rate_limit:{$endpoint}:{$ip}";
     
     // Répertoire pour stocker les données de rate limiting
-    $rateLimitDir = sys_get_temp_dir() . '/daba_rate_limit';
+    $rateLimitDir = sys_get_temp_dir() . '/bloom_rate_limit';
     if (!is_dir($rateLimitDir)) {
         mkdir($rateLimitDir, 0755, true);
     }

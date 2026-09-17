@@ -1,13 +1,13 @@
 <template>
-  <div class="sidebar-container w-64 bg-daba-cream dark:bg-daba-dark-bg text-daba-navy dark:text-white flex flex-col h-screen shadow-xl border-r border-daba-cream-alt dark:border-daba-dark-border transition-all duration-300">
+  <div class="sidebar-container w-64 bg-white dark:bg-bloom-dark-bg text-gray-800 dark:text-white flex flex-col h-screen shadow-xl border-r border-purple-100/60 dark:border-bloom-dark-border transition-all duration-300">
     <!-- Logo -->
-    <div class="sidebar-logo p-6 border-b border-daba-cream-alt dark:border-daba-dark-border flex items-center justify-start px-6 gap-3">
-      <div class="w-10 h-10 rounded-xl bg-daba-cream-alt dark:bg-daba-dark-card flex items-center justify-center overflow-hidden shadow-sm border border-daba-cream-alt dark:border-daba-dark-border">
-        <img src="/src/assets/daba-icone.png" class="w-full h-full object-cover" alt="Daba Logo">
+    <div class="sidebar-logo p-6 border-b border-purple-100/60 dark:border-bloom-dark-border flex items-center justify-start px-6 gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-bloom-dark-card flex items-center justify-center overflow-hidden shadow-sm border border-purple-100 dark:border-bloom-dark-border">
+        <img src="/src/assets/bloom-icone.png" class="w-full h-full object-cover" alt="Bloom Chloé Logo">
       </div>
       <div>
-        <h2 class="text-xl font-black tracking-tight text-daba-navy dark:text-white leading-none">Daba</h2>
-        <p class="text-[8px] text-daba-orange dark:text-daba-slate-dark uppercase tracking-[0.4em] font-bold mt-1">{{ authStore.user?.role || '' }}</p>
+        <h2 class="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">Bloom Chloé</h2>
+        <p class="text-[9px] text-bloom-purple dark:text-bloom-purple-light uppercase tracking-[0.25em] font-bold mt-1">{{ authStore.user?.role || 'Admin' }}</p>
       </div>
     </div>
     
@@ -17,25 +17,25 @@
         v-for="item in menuItems"
         :key="item.name"
         :to="item.path"
-        class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group"
+        class="sidebar-item flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group"
         :class="isActive(item.path) 
-          ? 'bg-daba-orange/10 dark:bg-daba-orange/50 text-daba-navy dark:text-white shadow-sm' 
-          : 'text-daba-slate dark:text-daba-slate-dark hover:bg-daba-cream-alt dark:hover:bg-daba-dark-card/50 hover:text-daba-navy dark:hover:text-white'"
+          ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20' 
+          : 'text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-bloom-dark-card hover:text-purple-700 dark:hover:text-white'"
       >
         <component 
           :is="item.icon" 
           class="w-5 h-5 mr-3 transition-colors"
-          :class="isActive(item.path) ? 'text-daba-navy dark:text-white' : 'text-daba-slate-dark dark:text-daba-slate group-hover:text-daba-orange dark:group-hover:text-white'"
+          :class="isActive(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-purple-600 dark:text-gray-400 dark:group-hover:text-white'"
         />
         {{ item.name }}
       </router-link>
     </nav>
 
     <!-- Bottom Actions -->
-    <div class="sidebar-bottom p-4 border-t border-daba-cream-alt dark:border-daba-dark-border space-y-1">
+    <div class="sidebar-bottom p-4 border-t border-purple-100/60 dark:border-bloom-dark-border space-y-1">
       <router-link 
         to="/" 
-        class="flex items-center px-4 py-3 text-sm font-medium text-daba-slate dark:text-daba-slate-dark hover:text-daba-navy dark:hover:text-white transition-colors rounded-xl hover:bg-daba-cream-alt dark:hover:bg-daba-dark-card"
+        class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-white transition-colors rounded-xl hover:bg-purple-50 dark:hover:bg-bloom-dark-card"
       >
         <ExternalLink class="w-5 h-5 mr-3" />
         Voir le site
@@ -46,8 +46,7 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
-import { computed } from 'vue'
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { gsap } from 'gsap'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -57,9 +56,7 @@ import {
   Users,
   BarChart3,
   Settings,
-  ExternalLink,
-  FileText,
-  Warehouse
+  ExternalLink
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -73,10 +70,8 @@ const menuItems = computed(() => {
   const allItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin', 'commercial', 'magasinier', 'comptable'] },
     { name: 'Produits', path: '/admin/products', icon: Package, roles: ['admin', 'magasinier'] },
-    { name: 'Stock', path: '/admin/stock', icon: Warehouse, roles: ['admin', 'magasinier'] },
     { name: 'Commandes', path: '/admin/orders', icon: ShoppingCart, roles: ['admin', 'commercial', 'comptable'] },
     { name: 'Clients', path: '/admin/users', icon: Users, roles: ['admin'] },
-    { name: 'Factures', path: '/admin/invoices', icon: FileText, roles: ['admin', 'comptable'] },
     { name: 'Analytiques', path: '/admin/analytics', icon: BarChart3, roles: ['admin', 'commercial', 'comptable'] },
     { name: 'Paramètres', path: '/admin/settings', icon: Settings, roles: ['admin'] },
   ]
@@ -88,7 +83,7 @@ const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
 }
 
-let ctx;
+let ctx
 
 onMounted(() => {
   ctx = gsap.context(() => {
@@ -113,9 +108,7 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 10px;
 }
 </style>
-
-

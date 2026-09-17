@@ -170,9 +170,10 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, defineProps, defineEmits, toRef } from 'vue'
 import { Icon } from '@iconify/vue'
 import { paymentService } from '@/services/api'
+import { useScrollLock } from '@/composables/useScrollLock'
 import Swal from 'sweetalert2'
 
 const props = defineProps({
@@ -180,6 +181,9 @@ const props = defineProps({
   amount: Number,
   orderId: Number
 })
+
+// Verrouillage du scroll en arrière-plan lorsque la modal de paiement est ouverte
+useScrollLock(toRef(props, 'isOpen'))
 
 const emit = defineEmits(['close', 'success'])
 
@@ -232,31 +236,32 @@ const processPayment = async () => {
       Swal.fire({
         title: 'Commande confirmée ! 🎉',
         html: `
-          <div class="text-left space-y-2 mt-4">
-            <p class="text-gray-600">Votre commande <strong>#${props.orderId}</strong> a été enregistrée.</p>
-            <p class="text-gray-600">Montant à payer à la livraison : <strong>${props.amount?.toLocaleString('fr-FR')} Fcfa</strong></p>
-            <p class="text-sm text-gray-500 mt-3">📦 Vous serez contacté(e) pour la livraison.</p>
+          <div class="text-center space-y-3 mt-4">
+            <p class="text-slate-800 font-bold text-base">Votre commande est enregistrée avec succès.</p>
+            <div class="p-3 bg-purple-50/80 rounded-2xl border border-purple-100/80 inline-block">
+              <span class="text-xs text-purple-700 font-bold uppercase tracking-wider">Montant à régler à la livraison</span>
+              <p class="text-xl font-black text-purple-900 mt-0.5">${Number(props.amount).toLocaleString('fr-FR')} FCFA</p>
+            </div>
+            <p class="text-xs text-slate-500 font-medium">📦 Notre équipe vous contactera sous peu pour organiser votre livraison.</p>
           </div>
         `,
         icon: 'success',
-        confirmButtonColor: '#9333ea',
-        confirmButtonText: 'Parfait !'
+        confirmButtonText: 'Continuer mes achats',
+        buttonsStyling: true
       })
       emit('success', { provider: 'cash_on_delivery', status: 'pending_delivery' })
       closeModal()
     } else if (selectedProvider.value === 'transfer') {
       const result = await Swal.fire({
-        title: 'Confirmer le transfert',
+        title: 'Confirmer votre transfert',
         html: `
-          <div class="text-left space-y-2 mt-4">
-            <p class="text-gray-600">Avez-vous bien effectué le transfert de <strong>${props.amount?.toLocaleString('fr-FR')} Fcfa</strong> ?</p>
-            <p class="text-sm text-gray-500 mt-2">Notre équipe vérifiera le paiement et vous contactera pour confirmer votre commande.</p>
+          <div class="text-center space-y-3 mt-4">
+            <p class="text-slate-700 text-sm">Avez-vous bien effectué le transfert de <strong class="text-purple-700 font-black">${Number(props.amount).toLocaleString('fr-FR')} FCFA</strong> ?</p>
+            <p class="text-xs text-slate-400">Notre équipe procédera à la vérification dès réception.</p>
           </div>
         `,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#9333ea',
-        cancelButtonColor: '#6b7280',
         confirmButtonText: 'Oui, j\'ai transféré',
         cancelButtonText: 'Pas encore'
       })
@@ -271,15 +276,18 @@ const processPayment = async () => {
         Swal.fire({
           title: 'Commande en attente de vérification 🔍',
           html: `
-            <div class="text-left space-y-2 mt-4">
-              <p class="text-gray-600">Commande <strong>#${props.orderId}</strong> enregistrée.</p>
-              <p class="text-gray-600">Nous vérifierons votre transfert dans les plus brefs délais.</p>
-              <p class="text-sm text-gray-500 mt-3">📱 Vous recevrez une confirmation une fois le paiement validé.</p>
+            <div class="text-center space-y-3 mt-4">
+              <p class="text-slate-800 font-bold text-base">Votre commande est enregistrée.</p>
+              <p class="text-slate-600 text-sm">Nous vérifierons votre transfert dans les plus brefs délais.</p>
+              <div class="pt-2">
+                <span class="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 text-xs font-bold rounded-xl border border-purple-100">
+                  📱 Vous recevrez une confirmation une fois le paiement validé.
+                </span>
+              </div>
             </div>
           `,
           icon: 'success',
-          confirmButtonColor: '#9333ea',
-          confirmButtonText: 'Compris !'
+          confirmButtonText: 'D\'accord'
         })
         emit('success', { provider: 'transfer', status: 'pending_verification' })
         closeModal()

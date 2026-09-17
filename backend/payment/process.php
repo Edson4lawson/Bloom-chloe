@@ -63,7 +63,7 @@ if ($success) {
             }
              
             // Mettre à jour le statut de la commande
-            $updateStmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+            $updateStmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
             $updateStmt->execute([$orderStatus, $orderId]);
         }
 

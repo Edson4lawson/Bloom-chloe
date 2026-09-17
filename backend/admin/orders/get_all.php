@@ -8,45 +8,55 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendJsonResponse(['error' => 'Méthode non autorisée'], 405);
 }
 
-// Authentifier l'utilisateur
+// Authentifier l'administrateur
 $user = authenticate();
-$allowedRoles = ['admin', 'commercial', 'comptable'];
-if (!in_array($user['role'], $allowedRoles)) {
-    sendJsonResponse(['error' => 'Accès refusé'], 403);
+if ($user['role'] !== 'admin') {
+    sendJsonResponse(['error' => 'Accès refusé. Droits administrateur requis.'], 403);
 }
 
 // Récupérer les paramètres de requête
-$orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : null;
+$orderId = isset($_GET['order_id']) ? (int)$_GET['order_id'] : (isset($_GET['id']) ? (int)$_GET['id'] : null);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 10;
-$status = isset($_GET['status']) ? $_GET['status'] : null;
-$userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+$perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 20;
+$status = !empty($_GET['status']) ? trim($_GET['status']) : null;
+$userId = !empty($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+$search = !empty($_GET['search']) ? trim($_GET['search']) : null;
+$date = !empty($_GET['date']) ? trim($_GET['date']) : null;
 
 // Valider les paramètres
 $page = max(1, $page);
-$perPage = max(1, min(50, $perPage));
+$perPage = max(1, min(100, $perPage));
 $offset = ($page - 1) * $perPage;
 
 try {
     // Si un ID de commande est fourni, récupérer les détails d'une commande spécifique
     if ($orderId) {
-        // Récupérer la commande avec infos client
         $stmt = $pdo->prepare('
             SELECT 
-                o.*,
+                o.id,
+                o.user_id,
+                o.total_amount,
+                o.status,
+                o.shipping_address,
+                o.shipping_fee,
+                o.tax_amount,
+                o.notes,
+                o.created_at,
+                o.updated_at,
+                COALESCE(NULLIF(TRIM(CONCAT(u.first_name, " ", u.last_name)), ""), u.email, "Client") as user_name,
                 u.email as user_email,
-                u.first_name as user_first_name,
-                u.last_name as user_last_name,
+                u.phone as user_phone,
                 p.status as payment_status,
                 p.transaction_id,
-                p.payment_details
+                p.provider as payment_provider,
+                p.metadata as payment_metadata
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             LEFT JOIN payments p ON o.id = p.order_id
             WHERE o.id = ?
         ');
         $stmt->execute([$orderId]);
-        $order = $stmt->fetch();
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$order) {
             sendJsonResponse(['error' => 'Commande non trouvée'], 404);
@@ -55,97 +65,126 @@ try {
         // Récupérer les articles de la commande
         $stmt = $pdo->prepare('
             SELECT 
-                oi.*,
+                oi.id,
+                oi.order_id,
+                oi.product_id,
+                oi.product_name,
+                oi.quantity,
+                oi.price_at_purchase as price,
                 p.slug as product_slug,
-                p.image_url,
-                p.name as product_name
+                p.image_url
             FROM order_items oi
             LEFT JOIN products p ON oi.product_id = p.id
             WHERE oi.order_id = ?
         ');
         $stmt->execute([$orderId]);
-        $orderItems = $stmt->fetchAll();
+        $orderItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Formater la réponse
         $order['items'] = $orderItems;
+        $order['canal'] = 'site';
         
-        // Si les détails de paiement sont stockés sous forme de JSON, les décoder
-        if (!empty($order['payment_details'])) {
-            $order['payment_details'] = json_decode($order['payment_details'], true);
+        if (!empty($order['payment_metadata'])) {
+            $order['payment_details'] = json_decode($order['payment_metadata'], true);
         }
         
-        sendJsonResponse($order);
+        sendJsonResponse([
+            'success' => true,
+            'order' => $order
+        ]);
     } 
-    // Sinon, récupérer la liste de toutes les commandes avec pagination
+    // Liste de toutes les commandes avec filtres et pagination
     else {
-        // Construire la requête de base
-        $whereClause = '1=1';
+        $whereConditions = [];
         $params = [];
 
-        // Filtrer par user_id si fourni
         if ($userId) {
-            $whereClause .= ' AND o.user_id = ?';
+            $whereConditions[] = 'o.user_id = ?';
             $params[] = $userId;
         }
 
-        // Filtrer par statut si fourni
         if ($status) {
-            $whereClause .= ' AND o.status = ?';
+            $whereConditions[] = 'o.status = ?';
             $params[] = $status;
         }
+
+        if ($date) {
+            $whereConditions[] = 'DATE(o.created_at) = ?';
+            $params[] = $date;
+        }
+
+        if ($search) {
+            $whereConditions[] = '(o.id LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR o.shipping_address LIKE ?)';
+            $searchTerm = "%$search%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
         
-        // Compter le nombre total de commandes
-        $countQuery = "SELECT COUNT(*) as total FROM orders o WHERE $whereClause";
+        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+
+        // Compter le total
+        $countQuery = "SELECT COUNT(*) as total FROM orders o LEFT JOIN users u ON o.user_id = u.id $whereClause";
         $countStmt = $pdo->prepare($countQuery);
         $countStmt->execute($params);
-        $total = $countStmt->fetch()['total'];
+        $total = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
         
-        // Récupérer les commandes avec pagination
+        // Récupérer les commandes
         $query = "
             SELECT 
-                o.*,
+                o.id,
+                o.user_id,
+                o.total_amount,
+                o.status,
+                o.shipping_address,
+                o.shipping_fee,
+                o.notes,
+                o.created_at,
+                o.updated_at,
+                COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), u.email, 'Client') as user_name,
                 u.email as user_email,
-                u.first_name as user_first_name,
-                u.last_name as user_last_name,
-                MAX(p.status) as payment_status,
-                COUNT(oi.id) as item_count
+                u.phone as user_phone,
+                (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count,
+                (SELECT p.status FROM payments p WHERE p.order_id = o.id ORDER BY p.id DESC LIMIT 1) as payment_status
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            LEFT JOIN payments p ON o.id = p.order_id
-            WHERE $whereClause
-            GROUP BY o.id, o.created_at, u.email, u.first_name, u.last_name, o.canal
+            $whereClause
             ORDER BY o.created_at DESC
             LIMIT ? OFFSET ?
         ";
         
         $stmt = $pdo->prepare($query);
-        foreach ($params as $i => $param) {
-            $stmt->bindValue($i + 1, $param);
+        $paramIndex = 1;
+        foreach ($params as $param) {
+            $stmt->bindValue($paramIndex++, $param);
         }
-        $stmt->bindValue(count($params) + 1, $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(count($params) + 2, $offset, PDO::PARAM_INT);
+        $stmt->bindValue($paramIndex++, $perPage, PDO::PARAM_INT);
+        $stmt->bindValue($paramIndex++, $offset, PDO::PARAM_INT);
         $stmt->execute();
-        $orders = $stmt->fetchAll();
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Ajouter canal par défaut
+        foreach ($orders as &$ord) {
+            $ord['canal'] = 'site';
+        }
         
-        // Formater la réponse avec la pagination
-        $response = [
+        sendJsonResponse([
+            'success' => true,
             'orders' => $orders,
             'pagination' => [
-                'total' => (int)$total,
+                'total' => $total,
                 'per_page' => $perPage,
                 'current_page' => $page,
-                'last_page' => ceil($total / $perPage),
-                'from' => $offset + 1,
+                'last_page' => ceil($total / max(1, $perPage)),
+                'from' => $total > 0 ? $offset + 1 : 0,
                 'to' => min($offset + $perPage, $total)
             ]
-        ];
-        
-        sendJsonResponse($response);
+        ]);
     }
     
 } catch (PDOException $e) {
     error_log('Erreur lors de la récupération des commandes admin: ' . $e->getMessage());
-    sendJsonResponse(['error' => 'Erreur lors de la récupération des commandes'], 500);
+    sendJsonResponse(['error' => 'Erreur lors de la récupération des commandes: ' . $e->getMessage()], 500);
 }
 ?>

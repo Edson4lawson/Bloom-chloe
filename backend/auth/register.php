@@ -13,16 +13,8 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../middleware/rate_limit.php';
 
-// ⚠️ PROTECTION: Authentification admin requise
-$user = authenticate();
-
-// Vérifier que l'utilisateur est un admin
-if ($user['role'] !== 'admin') {
-    sendJsonResponse(['error' => 'Accès refusé. Seuls les administrateurs peuvent créer des comptes.'], 403);
-}
-
-// ⚠️ PROTECTION: Limite à 10 créations par heure par admin
-rateLimit('admin_create_user', 10, 3600);
+// ⚠️ PROTECTION: Limite à 10 inscriptions par 5 minutes par IP
+rateLimit('public_register', 10, 300);
 
 // Vérifier si la requête est de type POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -36,26 +28,8 @@ $data = getJsonData();
 $requiredFields = ['email', 'password', 'first_name', 'last_name'];
 foreach ($requiredFields as $field) {
     if (empty($data[$field])) {
-        sendJsonResponse(['error' => 'Tous les champs sont obligatoires'], 400);
+        sendJsonResponse(['error' => 'Tous les champs obligatoires doivent être renseignés'], 400);
     }
-}
-
-// Valider role_id si fourni (pour créer des comptes staff)
-$roleId = isset($data['role_id']) ? (int)$data['role_id'] : null;
-if ($roleId !== null) {
-    // Vérifier que le rôle existe
-    $stmt = $pdo->prepare('SELECT id, name FROM roles WHERE id = ?');
-    $stmt->execute([$roleId]);
-    $role = $stmt->fetch();
-    if (!$role) {
-        sendJsonResponse(['error' => 'Rôle invalide'], 400);
-    }
-} else {
-    // Par défaut: rôle customer
-    $stmt = $pdo->prepare('SELECT id FROM roles WHERE name = "customer"');
-    $stmt->execute();
-    $role = $stmt->fetch();
-    $roleId = $role['id'];
 }
 
 // Nettoyer l'email
@@ -66,44 +40,22 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     sendJsonResponse(['error' => 'Format d\'email invalide'], 400);
 }
 
-// ⚠️ SÉCURITÉ: Valider la force du mot de passe (Politique stricte OWASP)
+// Valider la force du mot de passe
 function validatePasswordStrength($password) {
-    // Minimum 12 caractères
-    if (strlen($password) < 12) {
-        return 'Le mot de passe doit contenir au moins 12 caractères';
+    if (strlen($password) < 8) {
+        return 'Le mot de passe doit contenir au moins 8 caractères';
     }
-    // Maximum 128 caractères
     if (strlen($password) > 128) {
         return 'Le mot de passe ne peut pas dépasser 128 caractères';
     }
-    // Au moins une majuscule
     if (!preg_match('/[A-Z]/', $password)) {
-        return 'Le mot de passe doit contenir au moins une majuscule';
+        return 'Le mot de passe doit contenir au moins une lettre majuscule';
     }
-    // Au moins une minuscule
     if (!preg_match('/[a-z]/', $password)) {
-        return 'Le mot de passe doit contenir au moins une minuscule';
+        return 'Le mot de passe doit contenir au moins une lettre minuscule';
     }
-    // Au moins un chiffre
     if (!preg_match('/[0-9]/', $password)) {
         return 'Le mot de passe doit contenir au moins un chiffre';
-    }
-    // Au moins un caractère spécial
-    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
-        return 'Le mot de passe doit contenir au moins un caractère spécial (!@#$%^&*(),.?":{}|<>)';
-    }
-    // Interdire les mots de passe communs (liste simplifiée)
-    $commonPasswords = ['password', '123456', 'qwerty', 'admin', 'welcome', 'letmein'];
-    if (in_array(strtolower($password), $commonPasswords)) {
-        return 'Ce mot de passe est trop commun. Choisissez un mot de passe plus complexe.';
-    }
-    // Interdire les séquences
-    if (preg_match('/(012|123|234|345|456|567|678|789|890|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)/i', $password)) {
-        return 'Le mot de passe ne doit pas contenir de séquences consécutives.';
-    }
-    // Interdire les répétitions
-    if (preg_match('/(.)\1{2,}/', $password)) {
-        return 'Le mot de passe ne doit pas contenir de caractères répétés plus de 2 fois.';
     }
     return null;
 }
@@ -120,13 +72,33 @@ if ($stmt->fetch()) {
     sendJsonResponse(['error' => 'Cette adresse email est déjà associée à un compte. Veuillez vous connecter ou utiliser une autre adresse email.'], 409);
 }
 
-// Hacher le mot de passe avec Argon2id (algorithme le plus sécurisé)
-// Argon2id est recommandé par OWASP et NIST pour le hash de mots de passe
-$hashedPassword = password_hash($data['password'], PASSWORD_ARGON2ID, [
-    'memory_cost' => 65536,      // 64 MB
-    'time_cost' => 4,            // 4 itérations
-    'threads' => 3               // 3 threads
-]);
+// Déterminer le rôle
+// Par défaut: customer (role_id = 1)
+$roleId = 1;
+$roleName = 'customer';
+
+// Si un admin authentifié souhaite créer un rôle spécifique
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (!empty($authHeader) && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+    $adminToken = $matches[1];
+    $adminStmt = $pdo->prepare('SELECT u.id, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.token = ? AND u.token_expires_at > NOW()');
+    $adminStmt->execute([$adminToken]);
+    $adminUser = $adminStmt->fetch();
+    if ($adminUser && ($adminUser['role_name'] === 'admin' || $adminUser['role_name'] === 'super_admin')) {
+        if (!empty($data['role_id'])) {
+            $roleId = (int)$data['role_id'];
+            $roleStmt = $pdo->prepare('SELECT name FROM roles WHERE id = ?');
+            $roleStmt->execute([$roleId]);
+            $roleRow = $roleStmt->fetch();
+            if ($roleRow) {
+                $roleName = $roleRow['name'];
+            }
+        }
+    }
+}
+
+// Hacher le mot de passe
+$hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
 $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
@@ -135,7 +107,7 @@ try {
     $pdo->beginTransaction();
 
     // Insérer le nouvel utilisateur avec le rôle spécifié
-    $stmt = $pdo->prepare('INSERT INTO users (email, password, first_name, last_name, address, phone, role_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+    $stmt = $pdo->prepare('INSERT INTO users (email, password, first_name, last_name, address, phone, role, role_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())');
     $stmt->execute([
         $email,
         $hashedPassword,
@@ -143,6 +115,7 @@ try {
         trim($data['last_name']),
         $data['address'] ?? null,
         $data['phone'] ?? null,
+        $roleName === 'admin' ? 'admin' : 'customer',
         $roleId
     ]);
     

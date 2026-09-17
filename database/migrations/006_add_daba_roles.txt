@@ -1,5 +1,5 @@
--- Migration 006: Ajout des rôles Daba (commercial, magasinier, comptable)
--- Bloom Chloé / Daba Project
+-- Migration 006: Ajout des rôles (commercial, magasinier, comptable)
+-- Bloom Chloé Project
 -- Date: 2026-07-31
 -- Cette migration ajoute 3 nouveaux rôles sans modifier les rôles existants
 
@@ -48,5 +48,5 @@ SELECT @comptable_id, id, NOW() FROM permissions WHERE name IN (
 ON DUPLICATE KEY UPDATE role_id=role_id;
 
 -- Afficher un résumé
-SELECT 'Migration RBAC Daba terminée avec succès' AS message;
+SELECT 'Migration RBAC terminée avec succès' AS message;
 SELECT COUNT(*) AS roles_added FROM roles WHERE name IN ('commercial', 'magasinier', 'comptable');

@@ -3,16 +3,146 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-daba-cream: #FEFDFA;
-  --color-daba-cream-alt: #EFEDE4;
-  --color-daba-navy: #1B2B47;
-  --color-daba-navy-deep: #030046;
-  --color-daba-orange: #CE4600;
-  --color-daba-orange-dark: #B83C00;
-  --color-daba-green: #6F8766;
-  --color-daba-slate: #5A6474;
-  --color-daba-slate-dark: #464650;
-  --color-daba-dark-bg: #12141C;
-  --color-daba-dark-card: #1B2233;
-  --color-daba-dark-border: #2A3244;
+  --color-bloom-purple: #9333ea;
+  --color-bloom-purple-dark: #7e22ce;
+  --color-bloom-purple-deep: #581c87;
+  --color-bloom-purple-light: #f3e8ff;
+  --color-bloom-indigo: #6366f1;
+  --color-bloom-indigo-dark: #4f46e5;
+  --color-bloom-rose: #f43f5e;
+  --color-bloom-rose-light: #ffe4e6;
+  --color-bloom-gold: #f59e0b;
+  --color-bloom-cream: #fbfbf9;
+  --color-bloom-cream-alt: #f4f2ed;
+  --color-bloom-slate: #64748b;
+  --color-bloom-slate-dark: #475569;
+  --color-bloom-dark-bg: #0f1016;
+  --color-bloom-dark-card: #161822;
+  --color-bloom-dark-border: #232738;
+}
+
+/* =============================================================================
+   SWEETALERT2 — Bloom Chloé Luxury Design Theme
+   ============================================================================= */
+.swal2-container {
+  z-index: 999999 !important;
+}
+
+.swal2-container.swal2-backdrop-show,
+.swal2-container.swal2-noanimation {
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(160%) !important;
+}
+
+.swal2-popup {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  border-radius: 2rem !important;
+  padding: 2.25rem 2rem !important;
+  box-shadow: 0 30px 60px -15px rgba(147, 51, 234, 0.2), 0 0 0 1px rgba(147, 51, 234, 0.08) !important;
+  border: 1px solid rgba(243, 232, 255, 0.9) !important;
+  font-family: inherit !important;
+}
+
+.swal2-title {
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  font-size: 1.35rem !important;
+  letter-spacing: -0.025em !important;
+  padding: 0 0 0.5rem 0 !important;
+}
+
+.swal2-html-container {
+  color: #475569 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  margin: 0.75rem 0 0 0 !important;
+}
+
+.swal2-actions {
+  margin-top: 1.75rem !important;
+  gap: 0.75rem !important;
+}
+
+.swal2-styled.swal2-confirm {
+  background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%) !important;
+  border-radius: 1.25rem !important;
+  padding: 0.85rem 2.25rem !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: 0 10px 25px -5px rgba(147, 51, 234, 0.45) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 15px 30px -5px rgba(147, 51, 234, 0.6) !important;
+}
+
+.swal2-styled.swal2-confirm:active {
+  transform: translateY(0) !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  border-radius: 1.25rem !important;
+  padding: 0.85rem 1.75rem !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  border: 1px solid #e2e8f0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+/* Icons */
+.swal2-icon.swal2-success {
+  border-color: #a855f7 !important;
+  color: #9333ea !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #9333ea !important;
+}
+
+.swal2-icon.swal2-question {
+  border-color: #6366f1 !important;
+  color: #6366f1 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+/* Toast Notifications */
+.swal2-toast {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(16px) !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(147, 51, 234, 0.12) !important;
+  padding: 0.85rem 1.35rem !important;
+  border: 1px solid #f3e8ff !important;
+}
+
+.swal2-toast .swal2-title {
+  font-size: 0.925rem !important;
+  font-weight: 700 !important;
+  color: #1e1b4b !important;
 }

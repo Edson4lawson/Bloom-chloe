@@ -10,5 +10,5 @@ if (!in_array($user['role'], $allowedRoles)) {
     sendJsonResponse(['error' => 'Accès refusé'], 403);
 }
 
-echo json_encode(["store_name" => "Daba", "currency" => "FCFA"]);
+echo json_encode(["store_name" => "Bloom Chloé", "currency" => "FCFA"]);
 ?>

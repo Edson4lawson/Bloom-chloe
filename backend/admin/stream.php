@@ -3,17 +3,17 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../middleware/auth.php';
 
-// SSE headers FIRST — avant toute tentative de sendJsonResponse
+// SSE headers FIRST
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
 header('X-Accel-Buffering: no');
-// CORS pour SSE
+
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
 header("Access-Control-Allow-Origin: $origin");
 header('Access-Control-Allow-Credentials: true');
 
-// Authentifier sans utiliser sendJsonResponse (qui casserait le flux SSE)
+// Authentifier sans utiliser sendJsonResponse
 $token = $_GET['token'] ?? $_GET['access_token'] ?? '';
 if (empty($token)) {
     echo "event: auth_error\ndata: {\"error\":\"Token manquant\"}\n\n";
@@ -21,8 +21,13 @@ if (empty($token)) {
     exit();
 }
 
-// Vérifier le token manuellement sans appeler authenticate()
-$stmt = $pdo->prepare('SELECT id, email, first_name, last_name, role FROM users WHERE token = ? AND token_expires_at > NOW()');
+// Vérifier le token
+$stmt = $pdo->prepare('
+    SELECT u.id, u.email, u.first_name, u.last_name, u.role, r.name as role_name 
+    FROM users u 
+    LEFT JOIN roles r ON u.role_id = r.id 
+    WHERE u.token = ? AND u.token_expires_at > NOW()
+');
 $stmt->execute([$token]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -32,77 +37,111 @@ if (!$user) {
     exit();
 }
 
-if ($user['role'] !== 'admin') {
-    echo "event: auth_error\ndata: {\"error\":\"Accès refusé\"}\n\n";
+$effectiveRole = !empty($user['role_name']) ? $user['role_name'] : $user['role'];
+if ($effectiveRole !== 'admin') {
+    echo "event: auth_error\ndata: {\"error\":\"Accès refusé. Administrateur uniquement.\"}\n\n";
     flush();
     exit();
 }
 
-
-// We need a way to check for "real orders". For simplicity, we check if the max order id changed.
+// Initialiser les repères d'état
 $lastOrderId = 0;
+$lastOrderUpdate = '';
+$lastProductUpdate = '';
+
 try {
-    $stmt = $pdo->query("SELECT MAX(id) as max_id FROM orders");
-    $lastOrderId = (int) $stmt->fetchColumn();
+    $stmt = $pdo->query("SELECT MAX(id) as max_id, MAX(updated_at) as max_updated FROM orders");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $lastOrderId = (int)($row['max_id'] ?? 0);
+    $lastOrderUpdate = $row['max_updated'] ?? '';
+
+    $stmt = $pdo->query("SELECT MAX(updated_at) as max_prod_updated FROM products");
+    $lastProductUpdate = $stmt->fetchColumn() ?: '';
 } catch (Exception $e) {
     // ignore
 }
 
-// Some fake activity messages for the dashboard
-$fakeActivities = [
-    "Une cliente ajoute 'Mini Valise de Maquillage' au panier.",
-    "Un visiteur consulte la catégorie 'Accessoire de beauté'.",
-    "Une cliente est sur la page de paiement...",
-    "Nouveau visiteur depuis Abidjan.",
-    "Un avis 5 étoiles vient d'être soumis !",
-    "La 'Trousse de Toilette Bloom' est très demandée aujourd'hui."
-];
-
 $counter = 0;
 $startTime = time();
-$maxExecutionTime = 20; // Reconnect every 20s to free the thread on single-threaded servers
+$maxExecutionTime = 25; // Reconnexion fluide toutes les 25s
 
 while (time() - $startTime < $maxExecutionTime) {
     $events = [];
 
-    // 1. Check for real new orders
+    // 1. Vérifier les nouvelles commandes
     try {
-        $stmt = $pdo->query("SELECT id, total_amount, CONCAT(u.first_name, ' ', u.last_name) as user_name FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id > $lastOrderId ORDER BY o.id ASC");
-        $newOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($newOrders as $order) {
-            $events[] = [
-                'type' => 'new_order',
-                'message' => "Nouvelle commande #" . $order['id'] . " de " . $order['user_name'] . " (" . $order['total_amount'] . " FCFA)!"
-            ];
-            $lastOrderId = $order['id'];
+        if ($lastOrderId > 0) {
+            $stmt = $pdo->prepare("
+                SELECT o.id, o.total_amount, o.status,
+                       COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), u.email, 'Client') as user_name 
+                FROM orders o 
+                LEFT JOIN users u ON o.user_id = u.id 
+                WHERE o.id > ? 
+                ORDER BY o.id ASC
+            ");
+            $stmt->execute([$lastOrderId]);
+            $newOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($newOrders as $order) {
+                $events[] = [
+                    'type' => 'new_order',
+                    'order_id' => $order['id'],
+                    'amount' => $order['total_amount'],
+                    'message' => "Nouvelle commande #{$order['id']} de {$order['user_name']} ({$order['total_amount']} FCFA)"
+                ];
+                if ((int)$order['id'] > $lastOrderId) {
+                    $lastOrderId = (int)$order['id'];
+                }
+            }
         }
+
+        // 2. Vérifier les modifications de commandes (statut / paiement)
+        $stmt = $pdo->query("SELECT MAX(updated_at) as max_updated FROM orders");
+        $currentOrderUpdate = $stmt->fetchColumn() ?: '';
+        if ($lastOrderUpdate !== '' && $currentOrderUpdate > $lastOrderUpdate) {
+            $events[] = [
+                'type' => 'stats_update',
+                'reason' => 'order_modified',
+                'message' => 'Une commande a été mise à jour.'
+            ];
+            $lastOrderUpdate = $currentOrderUpdate;
+        }
+
+        // 3. Vérifier les modifications de produits / stock
+        $stmt = $pdo->query("SELECT MAX(updated_at) as max_prod_updated FROM products");
+        $currentProductUpdate = $stmt->fetchColumn() ?: '';
+        if ($lastProductUpdate !== '' && $currentProductUpdate > $lastProductUpdate) {
+            $events[] = [
+                'type' => 'stats_update',
+                'reason' => 'stock_or_product_modified',
+                'message' => 'Mise à jour de produit ou de stock détectée.'
+            ];
+            $lastProductUpdate = $currentProductUpdate;
+        }
+
     } catch (Exception $e) {
         // ignore
     }
 
-    // 2. Random fake activity (every ~10-15 seconds)
-    if ($counter % 5 == 0) {
-        // Just a random simulated live event
+    // Ping heartbeat régulier
+    if ($counter % 4 == 0) {
         $events[] = [
-            'type' => 'activity',
-            'message' => $fakeActivities[array_rand($fakeActivities)],
-            'visitors' => rand(8, 25) // Fake active visitors count
+            'type' => 'ping',
+            'timestamp' => time()
         ];
     }
 
-    // Send events
+    // Envoyer les événements
     foreach ($events as $event) {
         echo "data: " . json_encode($event) . "\n\n";
     }
 
-    // Output buffer flush
     if (ob_get_level() > 0) {
         ob_flush();
     }
     flush();
 
-    // Wait 3 seconds before next check
+    // Attendre 3 secondes avant la vérification suivante
     sleep(3);
     $counter++;
 }

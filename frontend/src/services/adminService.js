@@ -7,19 +7,29 @@ export const adminService = {
   
   async getStats(period = '6m') {
     const response = await api.get(`/admin/analytics/summary.php?period=${period}&t=${Date.now()}`)
+    const d = response.data || {}
+    const statsObj = {
+      totalProducts: d.total_products || 0,
+      totalOrders: d.total_orders || d.orders_count || 0,
+      totalClients: d.total_users || d.customers_count || 0,
+      totalRevenue: d.total_revenue || d.revenue_total || 0,
+      todayOrders: d.today_orders || 0,
+      pendingOrders: d.pending_orders || 0,
+      stockAlerts: d.stock_alerts || 0,
+      avgCart: d.avg_cart || 0,
+      paidInvoices: d.paid_invoices || 0,
+      pendingInvoices: d.pending_invoices || 0,
+      recentOrders: d.recent_orders || [],
+      recentProducts: d.recent_products || [],
+      topProducts: d.top_products || [],
+      orderStatusCounts: d.order_status_counts || [],
+      monthlySales: d.monthly_sales || d.sales_chart || []
+    }
     return {
       success: true,
-      stats: {
-        totalProducts: response.data.total_products || 0,
-        totalOrders: response.data.orders_count || 0,
-        totalClients: response.data.customers_count || 0,
-        totalRevenue: response.data.revenue_total || 0,
-        recentOrders: response.data.recent_orders || [],
-        recentProducts: response.data.recent_products || [],
-        topProducts: response.data.top_products || [],
-        orderStatusCounts: response.data.order_status_counts || [],
-        monthlySales: response.data.monthly_sales || []
-      }
+      stats: statsObj,
+      ...statsObj,
+      ...d
     }
   },
 
@@ -171,11 +181,24 @@ export const adminService = {
   },
 
   async getOrderDetail(orderId) {
-    const response = await api.get(`/orders/get_one.php?id=${orderId}&t=${Date.now()}`)
-    return {
-      success: true,
-      order: response.data
+    try {
+      const response = await api.get(`/admin/orders/get_all.php?order_id=${orderId}&t=${Date.now()}`)
+      const orderData = response.data?.order || response.data
+      return {
+        success: true,
+        order: orderData
+      }
+    } catch {
+      const response = await api.get(`/orders/get_one.php?id=${orderId}&t=${Date.now()}`)
+      return {
+        success: true,
+        order: response.data
+      }
     }
+  },
+
+  async getOrder(orderId) {
+    return this.getOrderDetail(orderId)
   },
 
   async updateOrderStatus(orderId, status) {

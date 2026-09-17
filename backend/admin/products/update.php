@@ -9,9 +9,8 @@ require_once __DIR__ . '/../../middleware/auth.php';
 
 // Authentifier l'administrateur
 $user = authenticate();
-$allowedRoles = ['admin', 'magasinier'];
-if (!in_array($user['role'], $allowedRoles)) {
-    sendJsonResponse(['error' => 'Accès refusé'], 403);
+if ($user['role'] !== 'admin') {
+    sendJsonResponse(['error' => 'Accès refusé. Droits administrateur requis.'], 403);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -19,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $data = getJsonData();
-$id = $data['id'] ?? null;
+$id = isset($data['id']) ? (int)$data['id'] : null;
 
 if (!$id) {
     sendJsonResponse(['error' => 'ID du produit manquant'], 400);
@@ -27,14 +26,13 @@ if (!$id) {
 
 $name = $data['name'] ?? null;
 $description = $data['description'] ?? null;
-$price = $data['price'] ?? null;
-$category_id = $data['category_id'] ?? null;
+$price = isset($data['price']) ? (float)$data['price'] : null;
+$category_id = isset($data['category_id']) ? (int)$data['category_id'] : null;
 $status = $data['status'] ?? null;
 $image_url = $data['image_url'] ?? null;
-$stock = $data['stock'] ?? null;
+$stock = isset($data['stock']) ? (int)$data['stock'] : (isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : null);
 
 try {
-    // Construire la requête dynamiquement pour ne mettre à jour que ce qui est envoyé
     $fields = [];
     $params = [];
 
@@ -44,7 +42,12 @@ try {
     if ($category_id !== null) { $fields[] = "category_id = ?"; $params[] = $category_id; }
     if ($status !== null) { $fields[] = "status = ?"; $params[] = $status; }
     if ($image_url !== null) { $fields[] = "image_url = ?"; $params[] = $image_url; }
-    if ($stock !== null) { $fields[] = "stock_quantity = ?"; $params[] = $stock; }
+    if ($stock !== null) { 
+        $fields[] = "stock_quantity = ?"; 
+        $params[] = $stock; 
+        $fields[] = "stock = ?"; 
+        $params[] = $stock; 
+    }
 
     if (empty($fields)) {
         sendJsonResponse(['error' => 'Aucune donnée à mettre à jour'], 400);

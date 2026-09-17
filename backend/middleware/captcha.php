@@ -1,6 +1,6 @@
 <?php
 /**
- * Middleware CAPTCHA - Daba
+ * Middleware CAPTCHA - Bloom Chloé
  * Implémente un CAPTCHA après plusieurs tentatives échouées
  * Utilise reCAPTCHA v3 pour une expérience utilisateur fluide
  *
@@ -18,7 +18,7 @@ function requiresCaptcha($endpoint) {
     $ip = getClientIP();
     $key = "captcha_require:{$endpoint}:{$ip}";
 
-    $rateLimitDir = sys_get_temp_dir() . '/daba_rate_limit';
+    $rateLimitDir = sys_get_temp_dir() . '/bloom_rate_limit';
     $file = $rateLimitDir . '/' . md5($key) . '.json';
     
     if (!file_exists($file)) {
@@ -40,7 +40,7 @@ function incrementCaptchaFailure($endpoint) {
     $ip = getClientIP();
     $key = "captcha_require:{$endpoint}:{$ip}";
 
-    $rateLimitDir = sys_get_temp_dir() . '/daba_rate_limit';
+    $rateLimitDir = sys_get_temp_dir() . '/bloom_rate_limit';
     if (!is_dir($rateLimitDir)) {
         mkdir($rateLimitDir, 0755, true);
     }
@@ -75,7 +75,7 @@ function resetCaptchaFailure($endpoint) {
     $ip = getClientIP();
     $key = "captcha_require:{$endpoint}:{$ip}";
 
-    $rateLimitDir = sys_get_temp_dir() . '/daba_rate_limit';
+    $rateLimitDir = sys_get_temp_dir() . '/bloom_rate_limit';
     $file = $rateLimitDir . '/' . md5($key) . '.json';
     
     if (file_exists($file)) {

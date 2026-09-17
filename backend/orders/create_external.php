@@ -126,7 +126,7 @@ try {
         ');
         
         // Email temporaire basé sur le téléphone
-        $tempEmail = 'temp_' . $phone . '@daba.local';
+        $tempEmail = 'temp_' . $phone . '@bloomchloe.local';
         
         $stmt->execute([
             $tempEmail,
@@ -239,8 +239,14 @@ try {
     
     // 7. Déduire le stock
     foreach ($data['items'] as $item) {
-        $stmt = $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?');
-        $stmt->execute([(int)$item['quantity'], (int)$item['product_id']]);
+        $stmt = $pdo->prepare('
+            UPDATE products 
+            SET stock_quantity = GREATEST(0, stock_quantity - ?),
+                stock = GREATEST(0, stock - ?),
+                updated_at = NOW()
+            WHERE id = ?
+        ');
+        $stmt->execute([(int)$item['quantity'], (int)$item['quantity'], (int)$item['product_id']]);
     }
     
     // 8. Créer l'enregistrement de paiement (en attente)

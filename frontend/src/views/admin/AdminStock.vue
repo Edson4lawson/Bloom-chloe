@@ -3,30 +3,30 @@
     <!-- Header -->
     <div class="stock-header flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-daba-navy dark:text-white">Gestion du Stock</h1>
-        <p class="text-sm text-daba-slate dark:text-daba-slate-dark">Ajustez les quantités et surveillez les alertes</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion du Stock</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Ajustez les quantités et surveillez les alertes</p>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="stock-filter bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm border border-daba-cream-alt dark:border-daba-dark-border p-4 transition-colors">
+    <div class="stock-filter bg-white dark:bg-bloom-dark-card rounded-2xl shadow-sm border border-purple-100/60 dark:border-bloom-dark-border p-4 transition-colors">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="relative">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-daba-slate-dark" />
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input 
             v-model="filters.search" 
             placeholder="Rechercher un produit..." 
-            class="w-full pl-10 pr-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-daba-orange/20 transition-all dark:text-white"
+            class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-bloom-dark-bg border border-gray-200 dark:border-bloom-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 transition-all dark:text-white"
           >
         </div>
-        <select v-model="filters.category" class="px-4 py-2 bg-daba-cream-alt dark:bg-daba-dark-card/50 border border-daba-cream-alt dark:border-daba-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-daba-orange/20 dark:text-white">
+        <select v-model="filters.category" class="px-4 py-2 bg-gray-50 dark:bg-bloom-dark-bg border border-gray-200 dark:border-bloom-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 dark:text-white">
           <option value="">Toutes les catégories</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
         <button 
           @click="showAlertsOnly = !showAlertsOnly"
-          class="px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2"
-          :class="showAlertsOnly ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-daba-cream-alt dark:bg-daba-dark-card/30 text-daba-slate dark:text-daba-slate-dark hover:bg-daba-cream-alt dark:hover:bg-slate-900/30'"
+          class="px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+          :class="showAlertsOnly ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-gray-100 dark:bg-bloom-dark-bg text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'"
         >
           <AlertTriangle class="w-4 h-4" />
           {{ showAlertsOnly ? 'Tous les produits' : 'Alertes uniquement' }}
@@ -35,34 +35,34 @@
     </div>
 
     <!-- Stock Table -->
-    <div class="stock-table-container bg-daba-cream dark:bg-daba-dark-card rounded-2xl shadow-sm border border-daba-cream-alt dark:border-daba-dark-border overflow-hidden transition-colors">
+    <div class="stock-table-container bg-white dark:bg-bloom-dark-card rounded-2xl shadow-sm border border-purple-100/60 dark:border-bloom-dark-border overflow-hidden transition-colors">
       <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-2 border-daba-cream-alt border-t-daba-orange"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-2 border-purple-200 border-t-purple-600"></div>
       </div>
       <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
-          <thead class="bg-daba-cream-alt dark:bg-daba-dark-card/50">
+        <table class="min-w-full divide-y divide-gray-100 dark:divide-bloom-dark-border">
+          <thead class="bg-gray-50 dark:bg-bloom-dark-bg/60">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Produit</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Catégorie</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Stock actuel</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Statut</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-daba-slate dark:text-daba-slate-dark uppercase tracking-wider">Dernière mise à jour</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Produit</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Catégorie</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock actuel</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Statut</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dernière mise à jour</th>
             </tr>
           </thead>
-          <tbody class="bg-daba-cream dark:bg-daba-dark-card divide-y divide-daba-cream-alt dark:divide-daba-dark-border">
-            <tr v-for="product in filteredProducts" :key="product.id" class="stock-row hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+          <tbody class="bg-white dark:bg-bloom-dark-card divide-y divide-gray-100 dark:divide-bloom-dark-border">
+            <tr v-for="product in filteredProducts" :key="product.id" class="stock-row hover:bg-purple-50/30 dark:hover:bg-gray-800/30 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-bold text-daba-navy dark:text-white">{{ product.name }}</div>
+                <div class="text-sm font-bold text-gray-900 dark:text-white">{{ product.name }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-daba-cream-alt dark:bg-daba-dark-card text-daba-slate dark:text-daba-slate-dark">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 dark:bg-bloom-dark-bg text-purple-700 dark:text-purple-300">
                   {{ product.category_name }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-2">
-                  <button @click="adjustStock(product, -1)" class="w-6 h-6 rounded bg-daba-cream-alt dark:bg-daba-dark-card text-daba-slate dark:text-daba-slate-dark hover:bg-daba-cream-alt hover:text-rose-600 transition-colors text-xs font-bold">−</button>
+                  <button @click="adjustStock(product, -1)" class="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-rose-50 hover:text-rose-600 transition-colors text-xs font-bold cursor-pointer">−</button>
                   <input
                     v-if="editingStock === product.id"
                     v-model.number="tempStock"
@@ -70,18 +70,18 @@
                     @keyup.enter="saveStock(product)"
                     @keyup.esc="editingStock = null"
                     type="number"
-                    class="w-16 px-1 py-0.5 text-center text-xs font-bold border border-daba-cream-alt dark:border-daba-dark-border rounded dark:bg-daba-dark-card dark:text-white focus:outline-none focus:ring-2 focus:ring-daba-orange/20"
+                    class="w-16 px-1 py-0.5 text-center text-xs font-bold border border-gray-200 dark:border-bloom-dark-border rounded dark:bg-bloom-dark-bg dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
                     ref="stockInput"
                   >
                   <span
                     v-else
                     @click="startEditStock(product)"
-                    class="text-xs cursor-pointer hover:text-daba-orange transition-colors font-bold"
+                    class="text-xs cursor-pointer hover:text-purple-600 transition-colors font-bold"
                     :class="getStockClass(product.stock)"
                   >
                     {{ product.stock }}
                   </span>
-                  <button @click="adjustStock(product, 1)" class="w-6 h-6 rounded bg-daba-cream-alt dark:bg-daba-dark-card text-daba-slate dark:text-daba-slate-dark hover:bg-daba-cream-alt hover:text-daba-green transition-colors text-xs font-bold">+</button>
+                  <button @click="adjustStock(product, 1)" class="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-xs font-bold cursor-pointer">+</button>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
@@ -89,7 +89,7 @@
                   {{ getStockStatus(product.stock) }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-xs text-daba-slate dark:text-daba-slate-dark">
+              <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                 {{ formatDate(product.updated_at) }}
               </td>
             </tr>
@@ -185,11 +185,11 @@ const saveStock = async (product) => {
 }
 
 const getStockClass = (stock) => {
-  return stock > 10 ? 'text-daba-green dark:text-daba-green' : 'text-rose-600 dark:text-rose-400'
+  return stock > 10 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
 }
 
 const getStockBadgeClass = (stock) => {
-  return stock > 10 ? 'bg-daba-cream-alt text-daba-green' : 'bg-daba-cream-alt text-rose-600'
+  return stock > 10 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
 }
 
 const getStockStatus = (stock) => {

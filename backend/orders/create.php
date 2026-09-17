@@ -74,7 +74,7 @@ try {
             $stmt->execute([$guestAddress, $userId]);
         } else {
             // Nouveau client: créer le compte avec email fictif basé sur le téléphone
-            $guestEmail = 'guest_' . preg_replace('/[^0-9]/', '', $guestPhone) . '@daba.local';
+            $guestEmail = 'guest_' . preg_replace('/[^0-9]/', '', $guestPhone) . '@bloomchloe.local';
             $stmt = $pdo->prepare('
                 INSERT INTO users (email, password, phone, first_name, last_name, address, role_id, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, (SELECT id FROM roles WHERE name = "customer"), NOW())
@@ -87,104 +87,66 @@ try {
         $userId = $user['id'];
     }
 
-    // 2. Récupérer les items (panier ou items directs)
-    if ($isGuestOrder) {
-        // Mode invité: items fournis directement
-        $orderItems = [];
-        foreach ($data['items'] as $item) {
-            if (empty($item['product_id']) || !isset($item['quantity'])) {
-                $pdo->rollBack();
-                sendJsonResponse(['error' => 'Chaque article doit avoir un product_id et une quantity'], 400);
-            }
-            if ($item['quantity'] < 1) {
-                $pdo->rollBack();
-                sendJsonResponse(['error' => 'La quantité doit être supérieure à 0'], 400);
-            }
-
-            // Récupérer les détails du produit avec lock FOR UPDATE
-            $stmt = $pdo->prepare('
-                SELECT id, name, price, stock_quantity
-                FROM products
-                WHERE id = ? AND status = "published"
-                FOR UPDATE
-            ');
-            $stmt->execute([$item['product_id']]);
-            $product = $stmt->fetch();
-
-            if (!$product) {
-                $pdo->rollBack();
-                sendJsonResponse(['error' => 'Produit non trouvé ou non disponible'], 400);
-            }
-
-            if ($product['stock_quantity'] < $item['quantity']) {
-                $pdo->rollBack();
-                sendJsonResponse([
-                    'error' => 'Stock insuffisant pour le produit: ' . $product['name'],
-                    'product_id' => $item['product_id'],
-                    'available_quantity' => $product['stock_quantity'],
-                    'requested_quantity' => $item['quantity']
-                ], 400);
-            }
-
-            $orderItems[] = [
-                'product_id' => $product['id'],
-                'product_name' => $product['name'],
-                'price' => $product['price'],
-                'quantity' => $item['quantity'],
-                'total' => $product['price'] * $item['quantity']
-            ];
-        }
-    } else {
-        // Mode connecté: récupérer le panier
-        $cartQuery = "
-            SELECT
-                c.product_id,
-                p.name as product_name,
-                p.price,
-                p.stock_quantity as available_quantity,
-                c.quantity as requested_quantity
-            FROM cart c
-            JOIN products p ON c.product_id = p.id
-            WHERE c.user_id = ? AND p.status = 'published'
-            FOR UPDATE
-        ";
-
-        $stmt = $pdo->prepare($cartQuery);
+    // 2. Récupérer les items (fournis dans la requête ou depuis la table cart)
+    $itemsToProcess = [];
+    if (!empty($data['items']) && is_array($data['items'])) {
+        $itemsToProcess = $data['items'];
+    } else if (!$isGuestOrder) {
+        // Mode connecté: récupérer depuis la table cart
+        $stmt = $pdo->prepare("SELECT product_id, quantity FROM cart WHERE user_id = ?");
         $stmt->execute([$userId]);
-        $cartItems = $stmt->fetchAll();
+        $itemsToProcess = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        if (empty($cartItems)) {
+    if (empty($itemsToProcess)) {
+        $pdo->rollBack();
+        sendJsonResponse(['error' => 'Votre panier est vide. Veuillez ajouter des produits avant de commander.'], 400);
+    }
+
+    $orderItems = [];
+    foreach ($itemsToProcess as $item) {
+        $productId = (int)($item['product_id'] ?? $item['id'] ?? 0);
+        $quantity = (int)($item['quantity'] ?? 1);
+
+        if ($productId <= 0 || $quantity <= 0) {
+            continue;
+        }
+
+        // Récupérer les détails du produit
+        $stmt = $pdo->prepare('
+            SELECT id, name, price, COALESCE(stock_quantity, stock, 100) as available_quantity
+            FROM products
+            WHERE id = ?
+            FOR UPDATE
+        ');
+        $stmt->execute([$productId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$product) {
             $pdo->rollBack();
-            sendJsonResponse(['error' => 'Votre panier est vide'], 400);
+            sendJsonResponse(['error' => 'Produit #' . $productId . ' non trouvé ou non disponible'], 400);
         }
 
-        // Convertir les items du panier en orderItems
-        $orderItems = [];
-        foreach ($cartItems as $item) {
-            if ($item['available_quantity'] < $item['requested_quantity']) {
-                $pdo->rollBack();
-                sendJsonResponse([
-                    'error' => 'Stock insuffisant pour le produit: ' . $item['product_name'],
-                    'product_id' => $item['product_id'],
-                    'available_quantity' => $item['available_quantity'],
-                    'requested_quantity' => $item['requested_quantity']
-                ], 400);
-            }
-
-            $itemTotal = $item['price'] * $item['requested_quantity'];
-            $orderItems[] = [
-                'product_id' => $item['product_id'],
-                'product_name' => $item['product_name'],
-                'price' => $item['price'],
-                'quantity' => $item['requested_quantity'],
-                'total' => $itemTotal
-            ];
+        if ((int)$product['available_quantity'] < $quantity) {
+            $pdo->rollBack();
+            sendJsonResponse([
+                'error' => "Stock insuffisant pour '{$product['name']}'. Quantité disponible : {$product['available_quantity']}"
+            ], 400);
         }
+
+        $price = (float)($item['price'] ?? $product['price']);
+        $orderItems[] = [
+            'product_id' => $product['id'],
+            'product_name' => $product['name'],
+            'price' => $price,
+            'quantity' => $quantity,
+            'total' => $price * $quantity
+        ];
     }
 
     if (empty($orderItems)) {
         $pdo->rollBack();
-        sendJsonResponse(['error' => 'Aucun article à commander'], 400);
+        sendJsonResponse(['error' => 'Aucun article valide dans la commande'], 400);
     }
 
     // 3. Calculer le total
@@ -200,18 +162,14 @@ try {
     // 4. Créer la commande
     $orderNumber = 'ORD-' . strtoupper(substr(uniqid(), -8));
 
-    // Déterminer le canal
-    $canal = $isGuestOrder ? 'site' : 'site';
-
     $stmt = $pdo->prepare('INSERT INTO orders (
-        user_id, total_amount, status, canal, shipping_address, shipping_fee, tax_amount, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');    
+        user_id, total_amount, status, shipping_address, shipping_fee, tax_amount, notes, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())');    
     
     $stmt->execute([
         $userId,
         $totalAmount,
         'pending',
-        $canal,
         $shippingAddress,
         $shippingFee,
         0, // Pas de taxe par défaut ou déjà incluse
@@ -220,7 +178,7 @@ try {
     
     $orderId = $pdo->lastInsertId();
     
-    // 4. Ajouter les articles de la commande
+    // 4. Ajouter les articles de la commande et déduire le stock
     foreach ($orderItems as $item) {
         $stmt = $pdo->prepare('INSERT INTO order_items (order_id, product_id, product_name, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([
@@ -231,9 +189,15 @@ try {
             $item['price']
         ]);
         
-        // Mettre à jour le stock
-        $updateStockStmt = $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?');
-        $updateStockStmt->execute([$item['quantity'], $item['product_id']]);
+        // Mettre à jour le stock (stock_quantity et stock)
+        $updateStockStmt = $pdo->prepare('
+            UPDATE products 
+            SET stock_quantity = GREATEST(0, stock_quantity - ?),
+                stock = GREATEST(0, stock - ?),
+                updated_at = NOW()
+            WHERE id = ?
+        ');
+        $updateStockStmt->execute([$item['quantity'], $item['quantity'], $item['product_id']]);
     }
     
     // 5. Vider le panier (seulement en mode connecté)

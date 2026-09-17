@@ -18,7 +18,6 @@ const AdminLogin = () => import('@/views/admin/AdminLogin.vue')
 const AdminLayout = () => import('@/layouts/AdminLayout.vue')
 const Dashboard = () => import('@/views/admin/Dashboard.vue')
 const AdminProducts = () => import('@/views/admin/AdminProducts.vue')
-const AdminStock = () => import('@/views/admin/AdminStock.vue')
 const AdminOrders = () => import('@/views/admin/AdminOrders.vue')
 const AdminCustomers = () => import('@/views/admin/AdminCustomers.vue')
 const AdminSettings = () => import('@/views/admin/AdminSettings.vue')
@@ -31,7 +30,7 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home,
-    meta: { title: 'Accueil — Daba' }
+    meta: { title: 'Accueil — Bloom Chloé' }
   },
   {
     path: '/boutique',
@@ -41,60 +40,68 @@ const routes = [
     path: '/produit/:slug',
     name: 'ProductDetail',
     component: ProductDetail,
-    meta: { title: 'Produit — Daba' }
+    meta: { title: 'Produit — Bloom Chloé' }
   },
   {
     path: '/mon-compte',
-    redirect: '/'
+    alias: ['/account', '/compte', '/mon-espace'],
+    name: 'AccountPage',
+    component: AccountPage,
+    meta: { title: 'Mon Compte — Bloom Chloé', requiresAuth: true }
+  },
+  {
+    path: '/account-redirect',
+    name: 'Account',
+    redirect: { name: 'AccountPage' }
   },
   {
     path: '/commande-confirmee/:orderId',
     name: 'OrderConfirmation',
     component: OrderConfirmation,
-    meta: { title: 'Commande confirmée — Daba' }
+    meta: { title: 'Commande confirmée — Bloom Chloé' }
   },
   {
     path: '/cookie-policy',
     name: 'CookiePolicy',
     component: CookiePolicy,
-    meta: { title: 'Politique cookies — Daba' }
+    meta: { title: 'Politique cookies — Bloom Chloé' }
   },
   {
     path: '/faq',
     name: 'FAQ',
     component: FAQ,
-    meta: { title: 'FAQ — Daba' }
+    meta: { title: 'FAQ — Bloom Chloé' }
   },
   {
     path: '/privacy',
     name: 'PrivacyPolicy',
     component: PrivacyPolicy,
-    meta: { title: 'Confidentialité — Daba' }
+    meta: { title: 'Confidentialité — Bloom Chloé' }
   },
   {
     path: '/returns',
     name: 'Returns',
     component: Returns,
-    meta: { title: 'Retours — Daba' }
+    meta: { title: 'Retours — Bloom Chloé' }
   },
   {
     path: '/shipping',
     name: 'Shipping',
     component: Shipping,
-    meta: { title: 'Livraison — Daba' }
+    meta: { title: 'Livraison — Bloom Chloé' }
   },
   {
     path: '/terms',
     name: 'Terms',
     component: Terms,
-    meta: { title: 'CGV — Daba' }
+    meta: { title: 'CGV — Bloom Chloé' }
   },
   // Admin Login — Route séparée
   {
     path: '/admin/login',
     name: 'AdminLogin',
     component: AdminLogin,
-    meta: { title: 'Admin Login — Daba' }
+    meta: { title: 'Admin Login — Bloom Chloé' }
   },
   // Admin Dashboard (avec layout sidebar)
   {
@@ -119,12 +126,6 @@ const routes = [
         meta: { allowedRoles: ['admin', 'magasinier'] }
       },
       {
-        path: 'stock',
-        name: 'AdminStock',
-        component: AdminStock,
-        meta: { allowedRoles: ['admin', 'magasinier'] }
-      },
-      {
         path: 'orders',
         name: 'AdminOrders',
         component: AdminOrders,
@@ -135,12 +136,6 @@ const routes = [
         name: 'AdminCustomers',
         component: AdminCustomers,
         meta: { allowedRoles: ['admin'] }
-      },
-      {
-        path: 'invoices',
-        name: 'AdminInvoices',
-        component: AdminOrders,
-        meta: { allowedRoles: ['admin', 'comptable'] }
       },
       {
         path: 'settings',
@@ -168,7 +163,7 @@ const routes = [
     path: '/unauthorized',
     name: 'Unauthorized',
     component: Unauthorized,
-    meta: { title: 'Accès non autorisé — Daba' }
+    meta: { title: 'Accès non autorisé — Bloom Chloé' }
   },
   // Catch-all 404
   {
@@ -232,6 +227,13 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
+})
+
+router.onError((error) => {
+  console.warn('Navigation error intercepted:', error)
+  if (error.message && error.message.includes('No match for')) {
+    router.push({ name: 'Home' }).catch(() => {})
+  }
 })
 
 export default router
