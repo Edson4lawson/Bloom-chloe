@@ -32,7 +32,7 @@ try {
     $pdo->beginTransaction();
     
     // Vérifier si le produit est disponible en stock
-    $stmt = $pdo->prepare('SELECT stock_quantity FROM products WHERE id = ? AND status = "published" FOR UPDATE');
+    $stmt = $pdo->prepare("SELECT COALESCE(stock_quantity, stock, 100) as available_quantity FROM products WHERE id = ? AND status = 'published' FOR UPDATE");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
     
@@ -42,11 +42,11 @@ try {
     }
     
     // Vérifier le stock disponible
-    if ($product['stock_quantity'] < $quantity) {
+    if ((int)$product['available_quantity'] < $quantity) {
         $pdo->rollBack();
         sendJsonResponse([
             'error' => 'Stock insuffisant',
-            'available_quantity' => $product['stock_quantity']
+            'available_quantity' => (int)$product['available_quantity']
         ], 400);
     }
     
@@ -54,17 +54,12 @@ try {
     $stmt = $pdo->prepare('UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND product_id = ?');
     $stmt->execute([$quantity, $userId, $productId]);
     
-    if ($stmt->rowCount() === 0) {
-        $pdo->rollBack();
-        sendJsonResponse(['error' => 'Article non trouvé dans votre panier'], 404);
-    }
-    
     $pdo->commit();
     
     // Récupérer le contenu mis à jour du panier
     $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM cart WHERE user_id = ?');
     $stmt->execute([$userId]);
-    $cartCount = $stmt->fetch()['count'];
+    $cartCount = $stmt->fetch()['count'] ?? 0;
     
     sendJsonResponse([
         'message' => 'Quantité mise à jour',
@@ -78,4 +73,3 @@ try {
     error_log('Erreur lors de la mise à jour du panier: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Erreur lors de la mise à jour du panier'], 500);
 }
-?>

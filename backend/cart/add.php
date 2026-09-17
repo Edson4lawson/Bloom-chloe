@@ -24,10 +24,9 @@ if ($productId <= 0) {
 $userId = $user['id'];
 
 try {
-    // Vérifier si le produit existe et est en stock
     $pdo->beginTransaction();
     
-    $stmt = $pdo->prepare('SELECT id, stock_quantity, price FROM products WHERE id = ? AND status = "published" FOR UPDATE');
+    $stmt = $pdo->prepare("SELECT id, COALESCE(stock_quantity, stock, 100) as available_quantity, price FROM products WHERE id = ? AND status = 'published' FOR UPDATE");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
     
@@ -37,11 +36,11 @@ try {
     }
     
     // Vérifier le stock disponible
-    if ($product['stock_quantity'] < $quantity) {
+    if ((int)$product['available_quantity'] < $quantity) {
         $pdo->rollBack();
         sendJsonResponse([
             'error' => 'Stock insuffisant',
-            'available_quantity' => $product['stock_quantity']
+            'available_quantity' => (int)$product['available_quantity']
         ], 400);
     }
     
@@ -52,14 +51,14 @@ try {
     
     if ($existingItem) {
         // Mettre à jour la quantité si le produit est déjà dans le panier
-        $newQuantity = $existingItem['quantity'] + $quantity;
+        $newQuantity = (int)$existingItem['quantity'] + $quantity;
         
         // Vérifier à nouveau le stock avec la nouvelle quantité
-        if ($product['stock_quantity'] < $newQuantity) {
+        if ((int)$product['available_quantity'] < $newQuantity) {
             $pdo->rollBack();
             sendJsonResponse([
                 'error' => 'Quantité demandée non disponible en stock',
-                'available_quantity' => $product['stock_quantity'] - $existingItem['quantity']
+                'available_quantity' => max(0, (int)$product['available_quantity'] - (int)$existingItem['quantity'])
             ], 400);
         }
         
@@ -67,7 +66,7 @@ try {
         $stmt->execute([$newQuantity, $existingItem['id']]);
     } else {
         // Ajouter un nouvel article au panier
-        $stmt = $pdo->prepare('INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO cart (user_id, product_id, quantity, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())');
         $stmt->execute([$userId, $productId, $quantity]);
     }
     
@@ -76,7 +75,7 @@ try {
     // Récupérer le contenu mis à jour du panier
     $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM cart WHERE user_id = ?');
     $stmt->execute([$userId]);
-    $cartCount = $stmt->fetch()['count'];
+    $cartCount = $stmt->fetch()['count'] ?? 0;
     
     sendJsonResponse([
         'message' => 'Produit ajouté au panier',
@@ -90,4 +89,3 @@ try {
     error_log('Erreur lors de l\'ajout au panier: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Erreur lors de l\'ajout au panier'], 500);
 }
-?>

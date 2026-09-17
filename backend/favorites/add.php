@@ -24,7 +24,7 @@ $userId = $user['id'];
 
 try {
     // Vérifier si le produit existe
-    $stmt = $pdo->prepare('SELECT id FROM products WHERE id = ? AND status = "published"');
+    $stmt = $pdo->prepare("SELECT id FROM products WHERE id = ? AND status = 'published'");
     $stmt->execute([$productId]);
     
     if (!$stmt->fetch()) {
@@ -40,7 +40,7 @@ try {
     }
     
     // Ajouter aux favoris
-    $stmt = $pdo->prepare('INSERT INTO favorites (user_id, product_id) VALUES (?, ?)');
+    $stmt = $pdo->prepare('INSERT INTO favorites (user_id, product_id, created_at) VALUES (?, ?, NOW())');
     $stmt->execute([$userId, $productId]);
     
     sendJsonResponse(['message' => 'Produit ajouté aux favoris'], 201);
@@ -49,4 +49,3 @@ try {
     error_log('Erreur lors de l\'ajout aux favoris: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Erreur lors de l\'ajout aux favoris'], 500);
 }
-?>

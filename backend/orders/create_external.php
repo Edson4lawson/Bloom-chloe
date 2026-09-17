@@ -152,7 +152,7 @@ try {
         $quantity = (int)$item['quantity'];
         
         // Vérifier que le produit existe et est disponible
-        $stmt = $pdo->prepare('SELECT id, name, price, stock_quantity FROM products WHERE id = ? AND status = "published" FOR UPDATE');
+        $stmt = $pdo->prepare("SELECT id, name, price, COALESCE(stock_quantity, stock, 100) as stock_quantity FROM products WHERE id = ? AND status = 'published' FOR UPDATE");
         $stmt->execute([$productId]);
         $product = $stmt->fetch();
         

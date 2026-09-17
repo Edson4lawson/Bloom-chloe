@@ -49,18 +49,21 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 CREATE INDEX IF NOT EXISTS idx_users_token ON users (token);
 
--- Création de l'administrateur par défaut (mot de passe initial: AdminBloom2026!)
+-- Création ou mise à jour de l'administrateur par défaut (mot de passe initial: AdminBloom2026!)
 INSERT INTO users (role_id, email, password, first_name, last_name, role, created_at)
 VALUES (
-    (SELECT id FROM roles WHERE name = 'admin'),
+    (SELECT id FROM roles WHERE name = 'admin' LIMIT 1),
     'admin@bloom-chloe.com',
-    '$2y$12$e8hGgTj2w5ZqEom7t2EwveYfUeWz0FmXw8i6eY6h6N0J1u6zL8Jqa',
+    '$2y$12$Fesc1uTTKIObAKqOwZ4o2e4rYukud8ZvBhvyCYXeaIiyW03eqTQv.',
     'Admin',
     'Bloom',
     'admin',
     CURRENT_TIMESTAMP
 )
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO UPDATE SET 
+    password = EXCLUDED.password,
+    role = 'admin',
+    role_id = (SELECT id FROM roles WHERE name = 'admin' LIMIT 1);
 
 -- =============================================================================
 -- 3. TABLE DES CATÉGORIES
