@@ -19,6 +19,7 @@ try {
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     $per_page = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 100; // Augmenté pour éviter les coupures
     $source = isset($_GET['source']) ? $_GET['source'] : null;
+    $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : null;
     $offset = ($page - 1) * $per_page;
 
     // Requête de base
@@ -31,8 +32,17 @@ try {
         LEFT JOIN categories c ON p.category_id = c.id 
     ";
     
+    // Filtres WHERE
+    $whereConditions = [];
     if ($source) {
-        $sql .= " WHERE p.source = " . $pdo->quote($source);
+        $whereConditions[] = "p.source = " . $pdo->quote($source);
+    }
+    if ($categoryId) {
+        $whereConditions[] = "p.category_id = " . $pdo->quote($categoryId);
+    }
+    
+    if (!empty($whereConditions)) {
+        $sql .= " WHERE " . implode(' AND ', $whereConditions);
     }
     
     $sql .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";

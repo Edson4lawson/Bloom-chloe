@@ -2,70 +2,173 @@
   <div class="space-y-8">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-black text-slate-800 dark:text-white">Gestion des Clients</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">{{ customers.length }} clients enregistrés</p>
+        <h1 class="text-2xl font-black text-gray-900 dark:text-white">Gestion des Clients</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ customers.length }} clients enregistrés</p>
       </div>
-      <div class="relative">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input v-model="searchQuery" type="text" placeholder="Rechercher un client..."
-          class="pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-500 rounded-xl text-sm focus:ring-2 focus:ring-accent/20 outline-none dark:text-white w-64" />
+      <div class="flex items-center gap-3">
+        <button @click="loadCustomers" :disabled="loading"
+          class="p-2.5 bg-white dark:bg-bloom-dark-card border border-purple-100/60 dark:border-bloom-dark-border text-gray-600 dark:text-gray-300 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 cursor-pointer"
+          title="Actualiser les clients">
+          <RotateCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        </button>
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input v-model="searchQuery" type="text" placeholder="Rechercher un client..."
+            class="pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-bloom-dark-bg border border-gray-200 dark:border-bloom-dark-border rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 outline-none dark:text-white w-64" />
+        </div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-[rgb(43,44,43)] rounded-3xl border border-slate-100 dark:border-slate-500 overflow-hidden shadow-sm">
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-accent"></div>
+    <div
+      class="bg-white dark:bg-bloom-dark-card rounded-3xl border border-purple-100/60 dark:border-bloom-dark-border overflow-hidden shadow-sm relative">
+      <!-- Top Loading Bar -->
+      <div v-if="loading"
+        class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 animate-pulse z-10">
       </div>
 
-      <table v-else class="w-full">
+      <table class="w-full">
         <thead>
-          <tr class="bg-slate-50 dark:bg-slate-900/30 text-left">
-            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Client</th>
-            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
-            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Inscrit le</th>
-            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rôle</th>
-            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
+          <tr class="bg-gray-50 dark:bg-bloom-dark-bg/60 text-left">
+            <th class="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Client</th>
+            <th class="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email
+            </th>
+            <th class="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Inscrit le</th>
+            <th class="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rôle
+            </th>
+            <th class="px-6 py-4 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="customer in filteredCustomers" :key="customer.id" class="border-t border-slate-50 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+          <!-- Loading Skeletons -->
+          <tr v-if="loading" v-for="n in 5" :key="'skeleton-' + n"
+            class="border-t border-gray-100 dark:border-bloom-dark-border animate-pulse">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-accent text-xs font-bold uppercase">
-                  {{ (customer.first_name || customer.email || '?').charAt(0) }}
-                </div>
-                <p class="text-sm font-bold text-slate-800 dark:text-white">{{ customer.first_name || '' }} {{ customer.last_name || '' }}</p>
+                <div class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800"></div>
+                <div class="h-4 bg-gray-100 dark:bg-gray-800 rounded w-28"></div>
               </div>
             </td>
-            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ customer.email }}</td>
-            <td class="px-6 py-4 text-xs text-slate-500">{{ formatDate(customer.created_at) }}</td>
             <td class="px-6 py-4">
-              <span :class="customer.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'"
-                class="px-2 py-1 text-[10px] font-bold rounded-full uppercase">{{ customer.role || 'client' }}</span>
+              <div class="h-4 bg-gray-100 dark:bg-gray-800 rounded w-36"></div>
             </td>
             <td class="px-6 py-4">
-              <button @click="toggleRole(customer)" class="text-xs font-bold text-accent hover:text-green-700 transition-colors">
-                {{ customer.role === 'admin' ? 'Retirer admin' : 'Rendre admin' }}
+              <div class="h-4 bg-gray-100 dark:bg-gray-800 rounded w-20"></div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-16"></div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="h-4 bg-gray-100 dark:bg-gray-800 rounded w-20"></div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-else-if="filteredCustomers.length === 0">
+            <td colspan="5" class="px-6 py-16 text-center text-gray-500 dark:text-gray-400 text-sm font-medium">
+              <div class="flex flex-col items-center justify-center space-y-2">
+                <Users class="w-10 h-10 text-gray-300 dark:text-gray-600 stroke-[1.5]" />
+                <p>Aucun client trouvé</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows -->
+          <tr v-else v-for="customer in filteredCustomers" :key="customer.id"
+            class="border-t border-gray-100 dark:border-bloom-dark-border hover:bg-purple-50/30 dark:hover:bg-gray-800/20 transition-colors">
+            <td class="px-6 py-4">
+              <div
+                class="flex items-center gap-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-gray-800/40 rounded-lg p-2 transition-colors"
+                @click="viewCustomerOrders(customer)">
+                <div
+                  class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs font-bold uppercase">
+                  {{ (customer.first_name || customer.email || '?').charAt(0) }}
+                </div>
+                <p class="text-sm font-bold text-gray-900 dark:text-white">{{ customer.first_name || '' }} {{
+                  customer.last_name || '' }}</p>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{{ customer.email }}</td>
+            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ formatDate(customer.created_at) }}</td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-1 text-[10px] font-black uppercase rounded-full"
+                :class="customer.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'">
+                {{ customer.role || 'client' }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <button @click="toggleRole(customer)"
+                class="text-xs font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 transition-colors cursor-pointer">
+                {{ customer.role === 'admin' ? 'Rétrograder' : 'Promouvoir Admin' }}
               </button>
             </td>
           </tr>
-          <tr v-if="filteredCustomers.length === 0">
-            <td colspan="5" class="px-6 py-12 text-center text-sm text-slate-400">Aucun client trouvé</td>
-          </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Modal des commandes du client -->
+    <div v-if="selectedCustomer"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div
+        class="bg-white dark:bg-bloom-dark-card rounded-3xl max-w-2xl w-full p-6 border border-purple-100/60 dark:border-bloom-dark-border max-h-[80vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-lg font-black text-gray-900 dark:text-white">
+              Commandes de {{ selectedCustomer.first_name }} {{ selectedCustomer.last_name }}
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedCustomer.email }}</p>
+          </div>
+          <button @click="selectedCustomer = null"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div v-if="loadingOrders" class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-2 border-purple-200 border-t-purple-600"></div>
+        </div>
+
+        <div v-else-if="customerOrders.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+          Aucune commande pour ce client
+        </div>
+
+        <div v-else class="space-y-3">
+          <div v-for="order in customerOrders" :key="order.id"
+            class="p-4 bg-purple-50/40 dark:bg-bloom-dark-bg/60 rounded-2xl border border-purple-100/50 dark:border-bloom-dark-border">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-gray-900 dark:text-white">#{{ order.id }}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full" :class="getStatusClass(order.status)">
+                  {{ order.status }}
+                </span>
+              </div>
+              <span class="text-sm font-bold text-gray-900 dark:text-white">{{
+                order.total_amount?.toLocaleString('fr-FR') }} FCFA</span>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              {{ formatDate(order.created_at) }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Search } from 'lucide-vue-next'
+import { Search, RotateCw, Users, X } from 'lucide-vue-next'
 import adminService from '@/services/adminService'
 
 const customers = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
+const selectedCustomer = ref(null)
+const customerOrders = ref([])
+const loadingOrders = ref(false)
 
 const filteredCustomers = computed(() => {
   if (!searchQuery.value) return customers.value
@@ -92,7 +195,33 @@ const toggleRole = async (customer) => {
   }
 }
 
-onMounted(async () => {
+const viewCustomerOrders = async (customer) => {
+  selectedCustomer.value = customer
+  loadingOrders.value = true
+  customerOrders.value = []
+
+  try {
+    const result = await adminService.getOrders({ user_id: customer.id, per_page: 50 })
+    if (result.success || result.orders) {
+      customerOrders.value = result.orders || []
+    }
+  } catch (err) {
+    console.error('Error loading customer orders:', err)
+    customerOrders.value = []
+  } finally {
+    loadingOrders.value = false
+  }
+}
+
+const getStatusClass = (status) => {
+  const s = (status || '').toLowerCase()
+  if (s.includes('completed') || s.includes('livré') || s.includes('delivered')) return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+  if (s.includes('pending') || s.includes('en attente')) return 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+  if (s.includes('cancel')) return 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
+  return 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+}
+
+const loadCustomers = async () => {
   loading.value = true
   try {
     const result = await adminService.getCustomers()
@@ -102,5 +231,9 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(() => {
+  loadCustomers()
 })
 </script>

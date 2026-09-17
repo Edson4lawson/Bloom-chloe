@@ -29,8 +29,8 @@ onMounted(async () => {
   // Set default SEO meta
   updateMetaTags({
     title: 'Accueil',
-    description: 'Bloom by Chloé — Votre boutique en ligne de beauté, bien-être et accessoires au Bénin. Livraison rapide à Cotonou.',
-    keywords: 'boutique, beauté, bien-être, accessoires, Bloom Chloé, Bénin, Cotonou'
+    description: 'Bloom by Chloé — Votre boutique en ligne de beauté, bien-être et accessoires lifestyle au Bénin. Livraison rapide à Cotonou.',
+    keywords: 'boutique, beauté, bien-être, accessoires, lifestyle, Bloom Chloé, Bloom by Chloé, Bénin, Cotonou'
   })
 
   // Pre-fetch products for search & homepage

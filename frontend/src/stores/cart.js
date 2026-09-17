@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { cartService } from '@/services/api'
 import { useNotifications } from '@/services/notificationService.js'
+import { getProductImageUrl } from '@/utils/imageHelper'
 
 /**
  * Cart Store — Gère le panier avec synchronisation backend
@@ -49,7 +50,22 @@ export const useCartStore = defineStore('cart', () => {
     if (!isValidProductId(productId)) return
 
     // Récupération du stock réel (soit depuis l'objet passé, soit depuis le store)
-    const stockAvailable = parseInt(product.stock_quantity || product.stock || 0, 10)
+    let stockAvailable = 0
+    if (product.stock_quantity !== undefined && product.stock_quantity !== null) {
+      stockAvailable = parseInt(product.stock_quantity, 10)
+    } else if (product.stock !== undefined && product.stock !== null) {
+      stockAvailable = parseInt(product.stock, 10)
+    } else {
+      // Rechercher dans le productStore
+      const productStore = (await import('./products')).useProductStore()
+      const dbProduct = productStore.getProductById(productId)
+      if (dbProduct) {
+        stockAvailable = parseInt(dbProduct.stock, 10)
+      } else {
+        // Fallback à 999 si le produit n'est pas trouvé dans le store pour éviter de bloquer l'ajout
+        stockAvailable = 999
+      }
+    }
     const existingIndex = items.value.findIndex(item => item.id === productId)
     const currentQtyInCart = existingIndex !== -1 ? items.value[existingIndex].quantity : 0
     const totalRequested = currentQtyInCart + qty
@@ -78,7 +94,7 @@ export const useCartStore = defineStore('cart', () => {
             title: product.title || product.name,
             price: parseFloat(product.price) || 0,
             quantity: stockAvailable,
-            thumbnail: product.thumbnail || product.image_url,
+            thumbnail: getProductImageUrl(product.thumbnail || product.image_url),
             category: product.category || product.category_name,
             slug: product.slug
           })
@@ -96,7 +112,7 @@ export const useCartStore = defineStore('cart', () => {
         title: product.title || product.name,
         price: parseFloat(product.price) || 0,
         quantity: qty,
-        thumbnail: product.thumbnail || product.image_url,
+        thumbnail: getProductImageUrl(product.thumbnail || product.image_url),
         category: product.category || product.category_name,
         slug: product.slug
       })
@@ -194,7 +210,7 @@ export const useCartStore = defineStore('cart', () => {
             title: bi.product_name || bi.name || bi.title,
             price: parseFloat(bi.price) || 0,
             quantity: parseInt(bi.quantity) || 1,
-            thumbnail: bi.image_url || bi.thumbnail,
+            thumbnail: getProductImageUrl(bi.image_url || bi.thumbnail),
             category: bi.category_name || bi.category,
             slug: bi.slug
           })

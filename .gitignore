@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+vendor/
 dist
 dist-ssr
 *.local
@@ -29,14 +30,20 @@ dist-ssr
 
 # Variables d'environnement (CRITIQUE - ne jamais committer)
 .env
+.env.*
+*.env
+**/.env
+**/.env.*
+backend/.env
+backend/.env.*
+api/.env
+api/.env.*
 .env.local
 .env.*.local
 .env.production
 .env.development.local
 .env.test.local
 .env.production.local
-api/.env
-api/config/.env
 
 # Logs de sécurité
 api/logs/
@@ -56,6 +63,8 @@ bloom_rate_limit/
 *.sql
 *.sql.gz
 *.dump
+!database/sql/*.sql
+!database/migrations/*.sql
 backups/
 
 # Fichiers de session PHP

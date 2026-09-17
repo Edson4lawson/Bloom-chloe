@@ -30,29 +30,48 @@ $orderId = isset($input['order_id']) ? (int)$input['order_id'] : null;
 
 // Simulation de traitement paiement
 // Dans un cas réel, ici on appellerait l'API Stripe / PayPal / etc.
-$success = true; // Simuler un succès par défaut
-$transactionId = 'TXN-' . strtoupper(uniqid());
+$success = true;
+$transactionId = ($provider === 'cash_on_delivery') 
+    ? 'COD-' . strtoupper(substr(uniqid(), -8)) 
+    : (($provider === 'transfer') ? 'TRF-' . strtoupper(substr(uniqid(), -8)) : 'TXN-' . strtoupper(uniqid()));
+
+$paymentStatus = 'succeeded';
+$orderStatus = 'processing';
+
+if ($provider === 'cash_on_delivery') {
+    $paymentStatus = 'pending_delivery';
+    $orderStatus = 'pending';
+} elseif ($provider === 'transfer') {
+    $paymentStatus = 'pending_verification';
+    $orderStatus = 'pending';
+}
 
 if ($success) {
     try {
-        // Enregistrer le paiement en base
-        $stmt = $pdo->prepare("INSERT INTO payments (order_id, transaction_id, provider, amount, status) VALUES (?, ?, ?, ?, 'succeeded')");
-        // Note: order_id devrait être valide. Pour ce test, on suppose qu'il existe ou on gère NULL si pas de contrainte FK stricte pour le test.
-        // Si order_id est obligatoire, il faut créer une commande d'abord.
-        
-        // Pour simplifier l'exemple sans commande préalable obligatoire dans cette démo:
         if ($orderId) {
-             $stmt->execute([$orderId, $transactionId, $provider, $amount]);
+            // Mettre à jour ou insérer le paiement
+            $checkStmt = $pdo->prepare("SELECT id FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1");
+            $checkStmt->execute([$orderId]);
+            $existingPayment = $checkStmt->fetch();
+
+            if ($existingPayment) {
+                $updatePayStmt = $pdo->prepare("UPDATE payments SET transaction_id = ?, provider = ?, amount = ?, status = ? WHERE id = ?");
+                $updatePayStmt->execute([$transactionId, $provider, $amount, $paymentStatus, $existingPayment['id']]);
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO payments (order_id, transaction_id, provider, amount, status) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$orderId, $transactionId, $provider, $amount, $paymentStatus]);
+            }
              
-             // Mettre à jour la commande
-             $updateStmt = $pdo->prepare("UPDATE orders SET status = 'processing' WHERE id = ?");
-             $updateStmt->execute([$orderId]);
+            // Mettre à jour le statut de la commande
+            $updateStmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?");
+            $updateStmt->execute([$orderStatus, $orderId]);
         }
 
         echo json_encode([
             'success' => true,
-            'message' => 'Paiement effectué avec succès',
-            'transaction_id' => $transactionId
+            'message' => ($provider === 'cash_on_delivery') ? 'Commande validée pour paiement à la livraison' : (($provider === 'transfer') ? 'Transfert en attente de vérification' : 'Paiement effectué avec succès'),
+            'transaction_id' => $transactionId,
+            'status' => $paymentStatus
         ]);
     } catch (PDOException $e) {
         error_log("Erreur paiement DB: " . $e->getMessage());

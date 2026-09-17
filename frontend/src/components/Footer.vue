@@ -79,7 +79,7 @@
       <div class="border-t border-white/5 pt-8">
         <div class="flex flex-col md:flex-row items-center justify-between gap-6">
           <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest">
-            &copy; {{ currentYear }} Bloom by Chloé. Made with 🖤.
+            &copy; {{ currentYear }} Bloom by Chloé.
           </p>
           <div class="flex items-center space-x-6">
             <router-link to="/terms" class="text-[10px] text-slate-500 font-black uppercase tracking-widest hover:text-white transition-colors">CGV</router-link>

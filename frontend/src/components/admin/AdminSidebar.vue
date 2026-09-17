@@ -1,13 +1,13 @@
 <template>
-  <div class="sidebar-container w-64 bg-white dark:bg-[rgb(43,44,43)] text-slate-800 dark:text-white flex flex-col h-screen shadow-xl border-r border-purple-100 dark:border-slate-500 transition-all duration-300">
+  <div class="sidebar-container w-64 bg-white dark:bg-bloom-dark-bg text-gray-800 dark:text-white flex flex-col h-screen shadow-xl border-r border-purple-100/60 dark:border-bloom-dark-border transition-all duration-300">
     <!-- Logo -->
-    <div class="sidebar-logo p-6 border-b border-purple-100 dark:border-slate-500 flex items-center justify-start px-6 gap-3">
-      <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden shadow-sm border border-purple-100 dark:border-slate-500">
-        <img src="/bloom-icone.png" class="w-full h-full object-cover" alt="Bloom Logo">
+    <div class="sidebar-logo p-6 border-b border-purple-100/60 dark:border-bloom-dark-border flex items-center justify-start px-6 gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-bloom-dark-card flex items-center justify-center overflow-hidden shadow-sm border border-purple-100 dark:border-bloom-dark-border">
+        <img src="/src/assets/bloom-icone.png" class="w-full h-full object-cover" alt="Bloom Chloé Logo">
       </div>
       <div>
-        <h2 class="text-xl font-black tracking-tight text-purple-900 dark:text-white leading-none">Bloom</h2>
-        <p class="text-[8px] text-purple-400 dark:text-slate-500 uppercase tracking-[0.4em] font-bold mt-1">Manager</p>
+        <h2 class="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">Bloom Chloé</h2>
+        <p class="text-[9px] text-bloom-purple dark:text-bloom-purple-light uppercase tracking-[0.25em] font-bold mt-1">{{ authStore.user?.role || 'Admin' }}</p>
       </div>
     </div>
     
@@ -17,25 +17,25 @@
         v-for="item in menuItems"
         :key="item.name"
         :to="item.path"
-        class="sidebar-item flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group"
+        class="sidebar-item flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group"
         :class="isActive(item.path) 
-          ? 'bg-purple-600/10 dark:bg-purple-600/50 text-purple-700 dark:text-white shadow-sm' 
-          : 'text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-slate-700/50 hover:text-purple-700 dark:hover:text-white'"
+          ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20' 
+          : 'text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-bloom-dark-card hover:text-purple-700 dark:hover:text-white'"
       >
         <component 
           :is="item.icon" 
           class="w-5 h-5 mr-3 transition-colors"
-          :class="isActive(item.path) ? 'text-purple-700 dark:text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-purple-600 dark:group-hover:text-white'"
+          :class="isActive(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-purple-600 dark:text-gray-400 dark:group-hover:text-white'"
         />
         {{ item.name }}
       </router-link>
     </nav>
 
     <!-- Bottom Actions -->
-    <div class="sidebar-bottom p-4 border-t border-purple-100 dark:border-slate-500 space-y-1">
+    <div class="sidebar-bottom p-4 border-t border-purple-100/60 dark:border-bloom-dark-border space-y-1">
       <router-link 
         to="/" 
-        class="flex items-center px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-purple-700 dark:hover:text-white transition-colors rounded-xl hover:bg-purple-50 dark:hover:bg-slate-800"
+        class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-white transition-colors rounded-xl hover:bg-purple-50 dark:hover:bg-bloom-dark-card"
       >
         <ExternalLink class="w-5 h-5 mr-3" />
         Voir le site
@@ -46,34 +46,44 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { gsap } from 'gsap'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
+import { useAuthStore } from '@/stores/auth'
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
   BarChart3,
   Settings,
   ExternalLink
 } from 'lucide-vue-next'
 
 const route = useRoute()
+const authStore = useAuthStore()
 
-const menuItems = [
-  { name: 'Dashboard', path: '/bloom-manager/dashboard', icon: LayoutDashboard },
-  { name: 'Produits', path: '/bloom-manager/products', icon: Package },
-  { name: 'Commandes', path: '/bloom-manager/orders', icon: ShoppingCart },
-  { name: 'Clients', path: '/bloom-manager/users', icon: Users },
-  { name: 'Analytiques', path: '/bloom-manager/analytics', icon: BarChart3 },
-  { name: 'Paramètres', path: '/bloom-manager/settings', icon: Settings },
-]
+const userRole = computed(() => authStore.user?.role || 'customer')
+
+const menuItems = computed(() => {
+  const role = userRole.value
+
+  const allItems = [
+    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin', 'commercial', 'magasinier', 'comptable'] },
+    { name: 'Produits', path: '/admin/products', icon: Package, roles: ['admin', 'magasinier'] },
+    { name: 'Commandes', path: '/admin/orders', icon: ShoppingCart, roles: ['admin', 'commercial', 'comptable'] },
+    { name: 'Clients', path: '/admin/users', icon: Users, roles: ['admin'] },
+    { name: 'Analytiques', path: '/admin/analytics', icon: BarChart3, roles: ['admin', 'commercial', 'comptable'] },
+    { name: 'Paramètres', path: '/admin/settings', icon: Settings, roles: ['admin'] },
+  ]
+
+  return allItems.filter(item => item.roles.includes(role))
+})
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')
 }
 
-let ctx;
+let ctx
 
 onMounted(() => {
   ctx = gsap.context(() => {
@@ -98,9 +108,7 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 10px;
 }
 </style>
-
-

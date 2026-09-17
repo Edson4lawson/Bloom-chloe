@@ -3,9 +3,9 @@
  * Endpoint de rafraîchissement des tokens
  * Permet de renouveler l'access token expiré avec un refresh token valide
  * 
- * @endpoint POST /api/auth/refresh.php
- * @body { "refresh_token": "string" }
- * @returns { "access_token": "string", "refresh_token": "string", "expires_in": int }
+ * Endpoint: POST /api/auth/refresh.php
+ * Body: { "refresh_token": "string" }
+ * Response: { "access_token": "string", "refresh_token": "string", "expires_in": int }
  */
 
 require_once __DIR__ . '/../config/headers.php';
@@ -31,7 +31,7 @@ if (empty($refreshToken)) {
 try {
     // Vérifier le refresh token dans la base
     $stmt = $pdo->prepare('
-        SELECT rt.*, u.id as user_id, u.email, u.first_name, u.last_name, u.role 
+        SELECT rt.*, u.id as user_id, u.email, u.first_name, u.last_name, u.phone, u.address, u.role 
         FROM refresh_tokens rt
         INNER JOIN users u ON rt.user_id = u.id
         WHERE rt.token = ? 
@@ -90,6 +90,8 @@ try {
             'email' => $tokenData['email'],
             'first_name' => $tokenData['first_name'],
             'last_name' => $tokenData['last_name'],
+            'phone' => $tokenData['phone'],
+            'address' => $tokenData['address'],
             'role' => $tokenData['role']
         ]
     ]);
@@ -99,6 +101,7 @@ try {
         $pdo->rollBack();
     }
     error_log('BLOOM ERROR [Refresh]: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    sendJsonResponse(['error' => 'Erreur lors du rafraîchissement du token', 'details' => $e->getMessage()], 500);
+    error_log('BLOOM ERROR [Refresh]: ' . $e->getMessage());
+    sendJsonResponse(['error' => 'Erreur lors du rafraîchissement de la session.'], 500);
 }
 ?>

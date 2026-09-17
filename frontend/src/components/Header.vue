@@ -95,7 +95,7 @@
                 </div>
                 
                 <!-- Lien Admin (Si applicable) -->
-                <router-link v-if="authStore.user?.role === 'admin'" to="/bloom-manager/dashboard" class="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors text-left border-b border-gray-50/50">
+                <router-link v-if="authStore.user?.role === 'admin' || authStore.user?.role === 'commercial' || authStore.user?.role === 'magasinier' || authStore.user?.role === 'comptable'" to="/admin/dashboard" class="w-full flex items-center space-x-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition-colors text-left border-b border-gray-50/50">
                   <Icon icon="solar:settings-minimalistic-bold" class="w-4 h-4" />
                   <span class="text-sm font-bold uppercase tracking-tighter">Gestion Boutique</span>
                 </router-link>
@@ -200,6 +200,9 @@ import AuthModal from './AuthModal.vue';
 import CartDrawer from './CartDrawer.vue';
 import WishlistDrawer from './WishlistDrawer.vue';
 import PaymentModal from './PaymentModal.vue';
+
+// Déclaration des événements émis
+const emit = defineEmits(['openStore', 'openAuth', 'openPayment']);
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();

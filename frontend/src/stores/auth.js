@@ -30,6 +30,20 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Helper pour formater les erreurs d'authentification de manière claire et professionnelle
+   */
+  const formatErrorMessage = (err, defaultMsg) => {
+    if (typeof err === 'string') return err;
+    if (err.response?.data?.error) return err.response.data.error;
+    if (err.response?.status === 401) return 'Adresse email ou mot de passe incorrect.';
+    if (err.response?.status === 409) return 'Cette adresse email est déjà utilisée. Veuillez vous connecter.';
+    if (err.response?.status === 429) return 'Trop de tentatives. Veuillez patienter quelques instants.';
+    if (err.response?.status >= 500) return 'Un incident technique temporaire est survenu. Veuillez réessayer.';
+    if (err.code === 'ERR_NETWORK' || !err.response) return 'Impossible de joindre le serveur. Vérifiez votre connexion internet.';
+    return err.message || defaultMsg;
+  };
+
+  /**
    * Login user
    */
   const login = async (email, password) => {
@@ -54,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw data.error || 'Erreur de connexion'
       }
     } catch (err) {
-      throw err.response?.data?.error || err.message || 'Identifiants invalides'
+      throw formatErrorMessage(err, 'Identifiants invalides')
     } finally {
       loading.value = false
     }
@@ -81,13 +95,12 @@ export const useAuthStore = defineStore('auth', () => {
 
         syncAppData()
       } else if (data.success) {
-        // Registration success without auto-login — user must login
         return true
       } else {
         throw data.error || 'Erreur d\'inscription'
       }
     } catch (err) {
-      throw err.response?.data?.error || err.message || 'Erreur lors de l\'inscription'
+      throw formatErrorMessage(err, 'Impossible de créer votre compte pour le moment.')
     } finally {
       loading.value = false
     }
@@ -152,6 +165,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Update user profile
+   */
+  const updateProfile = async (profileData) => {
+    loading.value = true
+    try {
+      const response = await authService.updateProfile(profileData)
+      const data = response.data
+      if (data.user) {
+        user.value = data.user
+        localStorage.setItem('user', JSON.stringify(user.value))
+      }
+      return response
+    } catch (err) {
+      throw err.response?.data?.error || err.message || 'Erreur lors de la mise à jour'
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     isAuthenticated,
@@ -162,7 +195,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     clearAuth,
     syncAppData,
-    refreshToken
+    refreshToken,
+    updateProfile
   }
 }, {
   persist: {

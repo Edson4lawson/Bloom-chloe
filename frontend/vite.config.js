@@ -16,4 +16,35 @@ export default defineConfig({
   },
   root: './',
   base: './',
+  server: {
+    host: '0.0.0.0', // accessible depuis le réseau local (téléphone)
+    port: 5173,
+  },
+  build: {
+    // Optimisation du build
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    // Code splitting
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue', 'vue-router', 'pinia'],
+          'ui': ['@iconify/vue', 'lucide-vue-next'],
+          'charts': ['chart.js'],
+          'animations': ['gsap', 'aos'],
+        },
+      },
+    },
+    // Chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+  },
+  // Optimisation des dépendances
+  optimizeDeps: {
+    include: ['vue', 'vue-router', 'pinia', 'axios'],
+  },
 })

@@ -108,11 +108,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, toRef } from 'vue';
 import { Icon } from '@iconify/vue';
 import OptimizedImage from './OptimizedImage.vue';
 import { useCartStore } from '../stores/cart';
 import { useWishlistStore } from '../stores/wishlist';
+import { useScrollLock } from '@/composables/useScrollLock';
 import Swal from 'sweetalert2';
 
 const props = defineProps({
@@ -122,6 +123,9 @@ const props = defineProps({
     default: () => ({})
   }
 });
+
+// Verrouillage du scroll en arrière-plan lorsque la modal produit est ouverte
+useScrollLock(toRef(props, 'isOpen'));
 
 const emit = defineEmits(['close']);
 const cartStore = useCartStore();

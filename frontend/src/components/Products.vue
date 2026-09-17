@@ -56,16 +56,26 @@
           <Icon icon="solar:box-minimalistic-linear" class="w-12 h-12 text-slate-200" />
         </div>
         <h3 class="text-xl font-bold text-slate-900 mb-2">Aucun produit trouvé</h3>
-        <p class="text-slate-400">Essayez de changer de catégorie ou de filtre.</p>
-        <button @click="selectedCategory = 'all'" class="mt-6 text-purple-600 font-bold uppercase tracking-widest text-xs underline">Voir tout</button>
+        <p class="text-slate-500 max-w-md mx-auto">Essayez de changer de catégorie ou de filtre. Si le problème persiste, vérifiez votre connexion ou rechargez la page.</p>
+        <div class="mt-8 flex items-center justify-center gap-4">
+          <button @click="selectedCategory = 'all'" class="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-purple-600 transition-all">Voir tout</button>
+          <button @click="window.location.reload()" class="px-6 py-3 bg-white border border-slate-100 text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all flex items-center gap-2">
+            <Icon icon="solar:restart-linear" class="w-4 h-4" />
+            Recharger
+          </button>
+        </div>
       </div>
 
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
         <div v-for="(product, index) in filteredProducts.slice(0, visibleCount)" :key="product.id" data-aos="fade-up" :data-aos-delay="index % 4 * 100" class="group">
           <!-- Card Image & Actions -->
-          <div class="relative bg-slate-50 rounded-[2.5rem] p-3 aspect-[4/5] overflow-hidden mb-6 transition-all duration-500 group-hover:bg-white group-hover:shadow-2xl group-hover:shadow-slate-200/50 border border-transparent group-hover:border-slate-100">
-            <div @click="goToProduct(product)" class="w-full h-full rounded-[2rem] overflow-hidden cursor-pointer">
-              <img :src="product.thumbnail" :alt="product.title" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+          <div class="relative bg-slate-50 rounded-3xl p-3 aspect-[4/5] overflow-hidden mb-6 transition-all duration-500 group-hover:bg-white group-hover:shadow-2xl group-hover:shadow-slate-200/50 border border-transparent group-hover:border-slate-100">
+            <div @click="goToProduct(product)" class="w-full h-full rounded-2xl overflow-hidden cursor-pointer">
+              <OptimizedImage 
+                :src="product.thumbnail" 
+                :alt="product.title" 
+                imageClass="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+              />
             </div>
 
             <!-- Quick Action Overlay -->
@@ -110,6 +120,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
+import OptimizedImage from './OptimizedImage.vue';
 import { useProductStore } from '../stores/products';
 import { useCartStore } from '../stores/cart';
 import { useWishlistStore } from '../stores/wishlist';
@@ -135,15 +146,18 @@ const sortOptions = [
 const selectedSort = ref(sortOptions[0]);
 const showSortDropdown = ref(false);
 
+const availableProducts = computed(() => {
+  // Filtrage asymétrique : on exclut les produits de la section Nouvel Arrivage (store) et Tendances
+  return products.value.filter(p => p.source !== 'store' && p.source !== 'tendance' && p.isActive !== false);
+});
+
 const categories = computed(() => {
-  const cats = new Set(products.value.map(p => p.category));
-  return ['all', ...Array.from(cats)].filter(c => c);
+  const cats = new Set(availableProducts.value.map(p => p.category));
+  return ['all', ...Array.from(cats)].filter(Boolean);
 });
 
 const filteredProducts = computed(() => {
-  // On exclut les produits de la boutique (Nouvel Arrivage) et ceux des tendances
-  // pour éviter la redondance sur la page d'accueil
-  let result = products.value.filter(p => p.source !== 'store' && p.source !== 'tendance');
+  let result = [...availableProducts.value];
   
   if (selectedCategory.value !== 'all') {
     result = result.filter(p => p.category === selectedCategory.value);
@@ -153,7 +167,7 @@ const filteredProducts = computed(() => {
     case 'price-asc': result.sort((a, b) => a.price - b.price); break;
     case 'price-desc': result.sort((a, b) => b.price - a.price); break;
     case 'alphabetical': result.sort((a, b) => a.title.localeCompare(b.title)); break;
-    default: result.sort((a, b) => b.id - a.id);
+    default: result.sort((a, b) => (b.id || 0) - (a.id || 0));
   }
   
   return result;

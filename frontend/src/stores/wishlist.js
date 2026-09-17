@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { getProductImageUrl } from '@/utils/imageHelper'
 
 /**
  * Wishlist Store — Gère les favoris avec synchronisation backend
@@ -32,7 +33,7 @@ export const useWishlistStore = defineStore('wishlist', () => {
         id: product.id,
         title: product.title || product.name,
         price: product.price,
-        thumbnail: product.thumbnail || product.image_url,
+        thumbnail: getProductImageUrl(product.thumbnail || product.image_url),
         category: product.category || product.category_name,
         slug: product.slug
       })
@@ -89,7 +90,7 @@ export const useWishlistStore = defineStore('wishlist', () => {
           id: i.product_id || i.id,
           title: i.product_name || i.name || i.title,
           price: parseFloat(i.price) || 0,
-          thumbnail: i.image_url || i.thumbnail,
+          thumbnail: getProductImageUrl(i.image_url || i.thumbnail),
           category: i.category_name || i.category,
           slug: i.slug
         })),

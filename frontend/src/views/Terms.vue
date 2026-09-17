@@ -52,8 +52,8 @@
                 <p class="text-xs font-bold text-slate-800 uppercase tracking-widest">MTN MOMO</p>
               </div>
               <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                <Icon icon="simple-icons:moov" class="w-10 h-10 mx-auto mb-3 text-blue-600" />
-                <p class="text-xs font-bold text-slate-800 uppercase tracking-widest">MOOV FLOAT</p>
+                <Icon icon="solar:bank-bold" class="w-10 h-10 mx-auto mb-3 text-red-600" />
+                <p class="text-xs font-bold text-slate-800 uppercase tracking-widest">VIREMENT UBA</p>
               </div>
               <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center">
                 <Icon icon="solar:card-bold" class="w-10 h-10 mx-auto mb-3 text-indigo-600" />

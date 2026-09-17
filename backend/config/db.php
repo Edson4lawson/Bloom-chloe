@@ -32,33 +32,57 @@ if (file_exists($envFile)) {
 // CONFIGURATION DE LA BASE DE DONNÉES
 // =============================================================================
 
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
-define('DB_NAME', getenv('DB_NAME') ?: 'Bloom_chloe');
+define('DB_NAME', getenv('DB_NAME') ?: 'bloom_chloe');
+define('DB_PORT', getenv('DB_PORT') ?: '3306');
 define('APP_ENV', getenv('APP_ENV') ?: 'development');
 
 // =============================================================================
-// CONNEXION PDO SÉCURISÉE
+// CONNEXION PDO SÉCURISÉE (MySQL local / PostgreSQL Supabase)
 // =============================================================================
 
 try {
-    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+    $databaseUrl = getenv('DATABASE_URL');
     
-    $options = [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false, // ⚠️ SÉCURITÉ: Désactive l'émulation des requêtes préparées
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '+00:00'"
-    ];
-    
-    // Ajouter SSL en production si configuré
-    if (APP_ENV === 'production' && getenv('MYSQL_SSL_CA')) {
-        $options[PDO::MYSQL_ATTR_SSL_CA] = getenv('MYSQL_SSL_CA');
-        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+    if ($databaseUrl) {
+        // Production: Parse DATABASE_URL (format: postgres://user:pass@host:port/dbname)
+        $dbParts = parse_url($databaseUrl);
+        $dbHost = $dbParts['host'] ?? '';
+        $dbPort = $dbParts['port'] ?? 5432;
+        $dbUser = $dbParts['user'] ?? '';
+        $dbPass = $dbParts['pass'] ?? '';
+        $dbName = ltrim($dbParts['path'] ?? '', '/');
+        
+        $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName};sslmode=require";
+        
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ];
+        
+        $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
+    } else {
+        // Développement local: MySQL
+        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+        
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '+00:00'"
+        ];
+        
+        // Ajouter SSL en production si configuré
+        if (APP_ENV === 'production' && getenv('MYSQL_SSL_CA')) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = getenv('MYSQL_SSL_CA');
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+        }
+        
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
     }
-    
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
     
 } catch (PDOException $e) {
     // ⚠️ SÉCURITÉ: Ne jamais exposer les détails d'erreur en production
@@ -109,5 +133,3 @@ function generateSecureToken($length = 32) {
 function isProduction() {
     return APP_ENV === 'production';
 }
-?>
-

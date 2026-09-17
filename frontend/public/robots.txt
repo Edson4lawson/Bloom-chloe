@@ -1,0 +1,133 @@
+# =============================================================================
+# BLOOM-CHLOE - robots.txt
+# Optimisé pour le référencement naturel et l'indexation par les IA
+# Dernière mise à jour: 2026-07-12
+# =============================================================================
+
+User-agent: *
+Allow: /
+
+# Autoriser l'indexation des assets statiques optimisés
+Allow: /assets/
+Allow: /images/
+
+# Bloquer les fichiers sensibles
+Disallow: /api/
+Disallow: /admin/
+Disallow: /bloom-manager/
+Disallow: /auth/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /*.json$
+Disallow: /*.env$
+
+# Sitemap
+Sitemap: https://bloom-chloe.com/sitemap.xml
+
+# =============================================================================
+# GOOGLE SEARCH CONSOLE VERIFICATION
+# =============================================================================
+# Ajoutez votre code de verification Google Search Console ci-dessous
+# Format: google-site-verification: votre_code_ici
+# =============================================================================
+
+# =============================================================================
+# RÈGLES SPÉCIFIQUES POUR LES MOTEURS DE RECHERCHE MAJEURS
+# =============================================================================
+
+# Google - Indexation optimisée
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# Google Images - Optimisé pour les produits
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /assets/
+
+# Google News (si applicable)
+User-agent: Googlebot-News
+Disallow: /
+
+# Bing/Microsoft - Indexation optimisée
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# DuckDuckGo - Indexation optimisée
+User-agent: DuckDuckBot
+Allow: /
+
+# Yandex - Indexation optimisée
+User-agent: YandexBot
+Allow: /
+
+# =============================================================================
+# RÈGLES POUR LES IA ET AGENTS SPÉCIALISÉS
+# =============================================================================
+
+# Permettre aux IA d'indexer le contenu pour les recherches sémantiques
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+# =============================================================================
+# BLOQUER LES BOTS MALVEILLANTS
+# =============================================================================
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: Sogou
+Disallow: /
+
+User-agent: SeznamBot
+Disallow: /
+
+# =============================================================================
+# CACHE ET PERFORMANCE
+# =============================================================================
+
+# Éviter le crawl inutile des fichiers de cache
+Disallow: /*.cache
+Disallow: /cache/
+Disallow: /tmp/
+
+# =============================================================================
+# FIN DU FICHIER
+# =============================================================================

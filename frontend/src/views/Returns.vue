@@ -82,7 +82,7 @@
               Remboursements
             </h2>
             <p class="text-slate-600 leading-relaxed">
-              Une fois le produit inspecté et validé par notre équipe, le remboursement est effectué sous <strong>24h</strong> via le même mode de paiement utilisé lors de la commande (MTN MoMo, Celtis Cash ou virement).
+              Une fois le produit inspecté et validé par notre équipe, le remboursement est effectué sous <strong>24h</strong> via le même mode de paiement utilisé lors de la commande (MTN Mobile Money, Celtis Cash ou Virement UBA).
             </p>
             <div class="bg-slate-900 text-white p-8 rounded-3xl mt-8">
               <p class="font-medium opacity-80 italic">"Nous nous engageons à traiter chaque demande avec bienveillance et équité pour garantir votre entière satisfaction."</p>
