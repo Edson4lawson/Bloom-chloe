@@ -14,14 +14,14 @@ if (!function_exists('getallheaders')) {
     }
 }
 
-// Vérifier si le token est présent dans les en-têtes
+/**
+ * Authentifie l'utilisateur via Token Bearer, GET param, ou JSON body
+ */
 function authenticate($lenient = false) {
     global $pdo;
     
-    // Récupérer le token depuis les en-têtes ou les paramètres d'URL
+    // 1. Récupérer le token depuis les en-têtes
     $headers = getallheaders();
-    
-    // Chercher l'en-tête Authorization (casse-insensible)
     $authHeader = '';
     foreach ($headers as $key => $value) {
         if (strtolower($key) === 'authorization') {
@@ -36,46 +36,62 @@ function authenticate($lenient = false) {
 
     $token = '';
 
-    if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-        $token = $matches[1];
-    } elseif (isset($_GET['token'])) {
-        $token = $_GET['token'];
-    } elseif (isset($_GET['access_token'])) {
-        $token = $_GET['access_token'];
+    if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
+        $token = trim($matches[1]);
+    } elseif (isset($_GET['token']) && !empty($_GET['token'])) {
+        $token = trim($_GET['token']);
+    } elseif (isset($_GET['access_token']) && !empty($_GET['access_token'])) {
+        $token = trim($_GET['access_token']);
+    } elseif (isset($_POST['token']) && !empty($_POST['token'])) {
+        $token = trim($_POST['token']);
     }
-    
-    // Vérifier le format du header d'autorisation
+
+    // Fallback JSON body
     if (empty($token)) {
-        sendJsonResponse(['error' => 'Token d\'authentification manquant ou invalide'], 401);
+        $data = getJsonData();
+        if (!empty($data['token'])) {
+            $token = trim($data['token']);
+        }
     }
     
-    // Vérifier le token dans la base de données avec jointure roles
-    $query = 'SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.address, u.role, u.role_id, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.token = ?';
-    if (!$lenient) {
-        $query .= ' AND u.token_expires_at > NOW()';
+    if (empty($token)) {
+        sendJsonResponse(['error' => 'Token d\'authentification manquant ou invalide. Veuillez vous connecter.'], 401);
     }
-
-    $stmt = $pdo->prepare($query);
-    $stmt->execute([$token]);
-    $user = $stmt->fetch();
     
-    if (!$user) {
-        sendJsonResponse(['error' => $lenient ? 'Utilisateur non trouvé' : 'Token invalide ou expiré'], 401);
-    }
+    try {
+        // Vérifier le token dans la base de données
+        $query = '
+            SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.address, u.role, u.role_id, r.name as role_name 
+            FROM users u 
+            LEFT JOIN roles r ON u.role_id = r.id 
+            WHERE u.token = ?
+        ';
 
-    // Utiliser role_name si disponible, sinon role (compatibilité)
-    if (!empty($user['role_name'])) {
-        $user['role'] = $user['role_name'];
-    }
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$token]);
+        $user = $stmt->fetch();
+        
+        if (!$user) {
+            sendJsonResponse(['error' => 'Session invalide ou expirée. Veuillez vous reconnecter.'], 401);
+        }
 
-    // Retourner l'utilisateur authentifié
-    return $user;
+        // Utiliser role_name si disponible, sinon role
+        if (!empty($user['role_name'])) {
+            $user['role'] = $user['role_name'];
+        }
+
+        return $user;
+
+    } catch (Exception $e) {
+        error_log('Auth error: ' . $e->getMessage());
+        sendJsonResponse(['error' => 'Erreur lors de la vérification de l\'authentification.'], 500);
+    }
 }
 
 // Vérifier si l'utilisateur est administrateur
 function requireAdmin($user) {
-    if ($user['role'] !== 'admin') {
+    $role = $user['role'] ?? '';
+    if ($role !== 'admin' && $role !== 'super_admin') {
         sendJsonResponse(['error' => 'Accès non autorisé. Droits administrateur requis.'], 403);
     }
 }
-?>
