@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   root: './frontend',          // index.html + src/ sont dans frontend/
-  base: './',
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './frontend/src'),

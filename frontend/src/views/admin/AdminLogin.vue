@@ -10,7 +10,7 @@
       <!-- Logo -->
       <div class="text-center mb-10">
         <div class="inline-flex items-center gap-3 mb-4">
-           <img src="/src/assets/bloom-icone.png" class="w-12 h-12 rounded-xl shadow-lg border border-purple-100 dark:border-bloom-dark-border" alt="Bloom Chloé">
+           <img :src="bloomIcon" class="w-12 h-12 rounded-xl shadow-lg border border-purple-100 dark:border-bloom-dark-border" alt="Bloom Chloé">
            <div class="text-left">
              <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">Bloom Chloé</h1>
              <p class="text-[10px] text-purple-600 dark:text-purple-400 font-black uppercase tracking-[0.3em] mt-1">Administration</p>
@@ -79,6 +79,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import bloomIcon from '@/assets/bloom-icone.png'
 
 const router = useRouter()
 const authStore = useAuthStore()
