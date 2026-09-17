@@ -3,7 +3,7 @@
     <!-- Logo -->
     <div class="sidebar-logo p-6 border-b border-purple-100/60 dark:border-bloom-dark-border flex items-center justify-start px-6 gap-3">
       <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-bloom-dark-card flex items-center justify-center overflow-hidden shadow-sm border border-purple-100 dark:border-bloom-dark-border">
-        <img src="/src/assets/bloom-icone.png" class="w-full h-full object-cover" alt="Bloom Chloé Logo">
+        <img :src="bloomIcon" class="w-full h-full object-cover" alt="Bloom Chloé Logo">
       </div>
       <div>
         <h2 class="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">Bloom Chloé</h2>
@@ -49,6 +49,7 @@ import { useRoute } from 'vue-router'
 import { computed, onMounted, onUnmounted } from 'vue'
 import { gsap } from 'gsap'
 import { useAuthStore } from '@/stores/auth'
+import bloomIcon from '@/assets/bloom-icone.png'
 import {
   LayoutDashboard,
   Package,

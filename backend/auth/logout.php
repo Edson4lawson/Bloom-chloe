@@ -2,9 +2,9 @@
 /**
  * Déconnexion sécurisée - Révoque les tokens
  * 
- * @endpoint POST /api/auth/logout.php
+ * @endpoint POST /auth/logout.php
  * @headers Authorization: Bearer <token>
- * @body { "refresh_token": "string" } (optionnel pour révoquer aussi le refresh)
+ * @body { "refresh_token": "string" } (optionnel)
  */
 
 require_once __DIR__ . '/../config/headers.php';
@@ -31,29 +31,25 @@ try {
     $refreshToken = $data['refresh_token'] ?? null;
     
     if ($refreshToken) {
-        // Révoquer le refresh token spécifique
         $stmt = $pdo->prepare('
             UPDATE refresh_tokens 
-            SET revoked = 1 
+            SET revoked = TRUE 
             WHERE token = ? AND user_id = ?
         ');
         $stmt->execute([$refreshToken, $user['id']]);
     }
     
-    // Option: Révoquer TOUS les refresh tokens de l'utilisateur (déconnexion de tous les appareils)
+    // Option: Révoquer TOUS les refresh tokens de l'utilisateur
     if (isset($data['logout_all']) && $data['logout_all'] === true) {
         $stmt = $pdo->prepare('
             UPDATE refresh_tokens 
-            SET revoked = 1 
-            WHERE user_id = ? AND revoked = 0
+            SET revoked = TRUE 
+            WHERE user_id = ? AND (revoked = FALSE OR revoked IS NULL)
         ');
         $stmt->execute([$user['id']]);
     }
     
     $pdo->commit();
-    
-    // Logger la déconnexion
-    error_log("User {$user['id']} ({$user['email']}) logged out from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
     
     sendJsonResponse([
         'message' => 'Déconnexion réussie',
@@ -61,10 +57,9 @@ try {
     ]);
     
 } catch (PDOException $e) {
-    if ($pdo->inTransaction()) {
+    if ($pdo && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
     error_log('Erreur logout: ' . $e->getMessage());
     sendJsonResponse(['error' => 'Erreur lors de la déconnexion'], 500);
 }
-?>
